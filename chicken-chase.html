@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chicken Chase</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #203b2d;
+      --muted: #607765;
+      --paper: #f7f5e9;
+      --green: #286341;
+      --lime: #d9ee78;
+      --coral: #e97852;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 7% 8%, rgba(217, 238, 120, .45), transparent 24rem),
+        radial-gradient(ellipse at 92% 88%, rgba(233, 120, 82, .12), transparent 28rem),
+        var(--paper);
+      font-family: "Trebuchet MS", "Avenir Next", sans-serif;
+    }
+
+    main {
+      width: min(1040px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 28px 0 22px;
+    }
+
+    .topline, .stats, .stat, .controls, .key-group {
+      display: flex;
+      align-items: center;
+    }
+
+    .topline { justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+
+    .brand-mark {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: var(--lime);
+      font-size: 23px;
+      transform: rotate(-8deg);
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(25px, 5vw, 36px);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .round-tag {
+      padding: 8px 12px;
+      border: 1px solid rgba(32, 59, 45, .22);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    .game-shell {
+      position: relative;
+      overflow: hidden;
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      background: #84b957;
+      box-shadow: 0 7px 0 rgba(32, 59, 45, .12);
+    }
+
+    .field-wrap { position: relative; }
+    canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+
+    .touch-joystick {
+      display: none;
+      position: absolute;
+      z-index: 2;
+      left: 14px;
+      bottom: 14px;
+      width: 116px;
+      height: 116px;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .joystick-ring {
+      position: absolute;
+      inset: 0;
+      border: 2px solid rgba(255, 253, 245, .82);
+      border-radius: 50%;
+      background: rgba(32, 59, 45, .35);
+      box-shadow: inset 0 0 0 7px rgba(32, 59, 45, .12), 0 2px 8px rgba(32, 59, 45, .2);
+      touch-action: none;
+    }
+
+    .joystick-knob {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 48px;
+      height: 48px;
+      border: 2px solid rgba(32, 59, 45, .7);
+      border-radius: 50%;
+      background: #d9ee78;
+      box-shadow: 0 2px 4px rgba(32, 59, 45, .3);
+      transform: translate(calc(-50% + var(--stick-x, 0px)), calc(-50% + var(--stick-y, 0px)));
+      pointer-events: none;
+    }
+
+    .upgrade-panel {
+      padding: 14px 18px 17px;
+      border-top: 2px solid var(--ink);
+      background: #f0eddb;
+    }
+
+    .upgrade-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 11px; }
+    .upgrade-kicker { margin: 0 0 3px; color: #b65b42; font-size: 9px; font-weight: 900; letter-spacing: 1.2px; }
+    .upgrade-heading h2 { margin: 0; font: 700 19px Georgia, serif; }
+    .upgrade-heading > p { margin: 0; color: var(--muted); font-size: 11px; font-weight: 700; }
+    .upgrade-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+
+    .upgrade-card {
+      display: flex;
+      min-height: 72px;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid rgba(32, 59, 45, .2);
+      border-radius: 7px;
+      color: var(--ink);
+      background: #fffdf5;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+    }
+
+    .upgrade-card:hover { border-color: var(--green); box-shadow: 0 3px 0 rgba(32, 59, 45, .12); transform: translateY(-1px); }
+    .upgrade-card:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+    .upgrade-icon { font-size: 24px; }
+    .upgrade-copy { display: grid; gap: 3px; }
+    .upgrade-copy strong { font-size: 12px; }
+    .upgrade-copy span { color: var(--muted); font-size: 10px; line-height: 1.3; }
+    .upgrade-copy small { color: #b65b42; font-size: 10px; font-weight: 900; }
+    .upgrade-card.weapon-card { min-height: 108px; align-items: flex-start; }
+    .weapon-perk { color: var(--green) !important; font-weight: 800; }
+    .weapon-debuff { color: #b65b42 !important; font-weight: 800; }
+    .upgrade-card:disabled { color: #849085; background: #ecebdd; cursor: not-allowed; opacity: .72; }
+    .upgrade-card:disabled:hover { border-color: rgba(32, 59, 45, .2); box-shadow: none; transform: none; }
+    .upgrade-note { margin: 9px 0 0; color: var(--muted); font-size: 10px; font-weight: 700; }
+    .weapon-controls { display: flex; align-items: center; gap: 7px; }
+    .weapon-readout { display: grid; gap: 2px; min-width: 62px; }
+    .weapon-name { color: var(--muted); font-size: 9px; font-weight: 900; letter-spacing: .7px; text-transform: uppercase; }
+    .ammo-readout { font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .combat-button { min-height: 40px; padding: 8px 10px; border: 1px solid var(--ink); border-radius: 6px; color: var(--ink); background: var(--lime); font: inherit; font-size: 11px; font-weight: 900; cursor: pointer; }
+    .combat-button:disabled { color: var(--muted); background: #ecebdd; cursor: not-allowed; }
+    [hidden] { display: none !important; }
+
+    .hud {
+      display: flex;
+      min-height: 74px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 18px;
+      border-top: 2px solid var(--ink);
+      background: #fffdf5;
+    }
+
+    .stats { gap: clamp(18px, 5vw, 52px); }
+    .stat { gap: 9px; }
+    .stat-icon { font-size: 20px; }
+    .stat-label { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: 1px; }
+    .stat-value { font-size: 21px; font-weight: 900; font-variant-numeric: tabular-nums; }
+
+    .start-button {
+      min-width: 140px;
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 7px;
+      color: #fffdf5;
+      background: var(--green);
+      box-shadow: 0 3px 0 #183e29;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease;
+    }
+
+    .start-button:hover { background: #34794f; transform: translateY(-1px); }
+    .start-button:active { transform: translateY(2px); box-shadow: none; }
+    .start-button:focus-visible { outline: 3px solid var(--coral); outline-offset: 3px; }
+
+    .bottomline { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 2px 0; }
+    .controls { gap: 10px; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .8px; }
+    .key-group { gap: 4px; }
+    kbd {
+      display: inline-grid;
+      width: 23px;
+      height: 22px;
+      place-items: center;
+      border: 1px solid rgba(32, 59, 45, .25);
+      border-bottom-width: 3px;
+      border-radius: 4px;
+      color: var(--ink);
+      background: #fffdf5;
+      font: 700 13px "Trebuchet MS", sans-serif;
+    }
+    .credit { color: #778678; font-family: Georgia, serif; font-size: 13px; font-style: italic; }
+
+    @media (max-width: 560px) {
+      main { width: calc(100% - 20px); padding-top: 16px; }
+      .topline { margin-bottom: 13px; }
+      .round-tag { padding: 7px 9px; font-size: 9px; letter-spacing: .6px; }
+      .brand { gap: 8px; }
+      .brand-mark { width: 36px; height: 36px; font-size: 20px; }
+      .hud { min-height: 68px; padding: 10px; }
+      .stats { gap: 10px; }
+      .stat { gap: 5px; }
+      .stat-icon { font-size: 17px; }
+      .stat-label { font-size: 8px; letter-spacing: .5px; }
+      .stat-value { font-size: 15px; }
+      .start-button { min-width: 112px; padding: 11px 10px; font-size: 12px; }
+      .weapon-controls { width: 100%; justify-content: flex-end; }
+      .combat-button { min-height: 36px; padding: 7px 8px; }
+      .touch-joystick { display: block; width: 104px; height: 104px; left: 10px; bottom: 10px; }
+      .joystick-knob { width: 44px; height: 44px; }
+      .bottomline { align-items: flex-start; flex-direction: column; gap: 9px; }
+      .credit { align-self: flex-end; }
+      .upgrade-panel { padding: 12px 10px; }
+      .upgrade-heading { align-items: flex-start; }
+      .upgrade-heading > p { max-width: 90px; text-align: right; }
+      .upgrade-grid { grid-template-columns: 1fr; gap: 6px; }
+      .upgrade-card { min-height: 54px; padding: 7px 10px; }
+      .upgrade-icon { width: 28px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="topline">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">🐔</span>
+        <h1>Chicken Chase</h1>
+      </div>
+      <div class="round-tag">ROUND <span id="round">1</span> · 45 SEC</div>
+    </header>
+
+    <section class="game-shell" aria-label="Chicken Chase game">
+      <div class="field-wrap">
+        <canvas id="field" width="960" height="540" aria-label="A farmer chasing chickens across a grassy field"></canvas>
+        <div class="touch-joystick" id="touch-joystick" hidden>
+          <div class="joystick-ring" id="joystick-ring" role="application" aria-label="Movement joystick"><div class="joystick-knob" id="joystick-knob"></div></div>
+        </div>
+      </div>
+      <div class="hud">
+        <div class="stats" aria-live="polite">
+          <div class="stat"><span class="stat-icon" aria-hidden="true">🐣</span><div><div class="stat-label">CHICKENS</div><div class="stat-value" id="score">0</div></div></div>
+          <div class="stat"><span class="stat-icon" aria-hidden="true">⏱</span><div><div class="stat-label">TIME</div><div class="stat-value" id="time">45</div></div></div>
+          <div class="stat"><span class="stat-icon" aria-hidden="true">♥</span><div><div class="stat-label">HEALTH</div><div class="stat-value" id="health">3 / 3</div></div></div>
+        </div>
+        <button class="start-button" id="start" type="button">Start chasing</button>
+        <div class="weapon-controls" id="weapon-controls" hidden>
+          <div class="weapon-readout"><span class="weapon-name" id="weapon-name">Weapon</span><span class="ammo-readout" id="ammo-readout">--</span></div>
+          <button class="combat-button" id="attack-button" type="button" title="Attack (Space)">Attack</button>
+          <button class="combat-button" id="reload-button" type="button" title="Reload (R)">Reload</button>
+        </div>
+      </div>
+      <section class="upgrade-panel" id="upgrade-panel" aria-labelledby="upgrade-title" hidden>
+        <div class="upgrade-heading">
+          <div><p class="upgrade-kicker">ROUND COMPLETE</p><h2 id="upgrade-title">Pick one for round <span id="next-round">2</span></h2></div>
+          <p><span id="bank-count">0</span> chickens to spend</p>
+        </div>
+        <div class="upgrade-grid" id="upgrade-grid"></div>
+        <p class="upgrade-note" id="upgrade-note" aria-live="polite">Choose one upgrade for the next round.</p>
+      </section>
+      <section class="upgrade-panel" id="weapon-panel" aria-labelledby="weapon-title" hidden>
+        <div class="upgrade-heading">
+          <div><p class="upgrade-kicker">ROUND 5 LOADOUT</p><h2 id="weapon-title">Choose your weapon</h2></div>
+          <p>Pick one to keep</p>
+        </div>
+        <div class="upgrade-grid">
+          <button class="upgrade-card weapon-card" type="button" data-weapon="knife">
+            <span class="upgrade-icon" aria-hidden="true">🔪</span>
+            <span class="upgrade-copy"><strong>Knife</strong><span class="weapon-perk">Perk: quick strikes, +25 speed</span><span class="weapon-debuff">Debuff: 90 px reach</span><small>Unlimited melee</small></span>
+          </button>
+          <button class="upgrade-card weapon-card" type="button" data-weapon="sniper">
+            <span class="upgrade-icon" aria-hidden="true">🎯</span>
+            <span class="upgrade-copy"><strong>Sniper</strong><span class="weapon-perk">Perk: 420 px range, 2 damage</span><span class="weapon-debuff">Debuff: slow shots, -45 speed</span><small>5 rounds + 20 reserve</small></span>
+          </button>
+          <button class="upgrade-card weapon-card" type="button" data-weapon="ak47">
+            <span class="upgrade-icon" aria-hidden="true">🔫</span>
+            <span class="upgrade-copy"><strong>AK-47</strong><span class="weapon-perk">Perk: rapid automatic fire</span><span class="weapon-debuff">Debuff: -20 speed, reload often</span><small>30 rounds + 90 reserve</small></span>
+          </button>
+        </div>
+        <p class="upgrade-note">Hold Space or Attack to fire. Reload with R or the Reload button.</p>
+      </section>
+    </section>
+
+    <footer class="bottomline">
+      <div class="controls" aria-label="Move with arrow keys">
+        <span class="key-group" aria-hidden="true"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
+        <span>ARROW KEYS TO MOVE</span>
+        <span id="weapon-help" hidden>SPACE TO ATTACK · R TO RELOAD</span>
+      </div>
+      <div class="credit">Those feathers won't chase themselves.</div>
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      const canvas = document.querySelector("#field");
+      const ctx = canvas.getContext("2d");
+      const scoreNode = document.querySelector("#score");
+      const timeNode = document.querySelector("#time");
+      const healthNode = document.querySelector("#health");
+      const roundNode = document.querySelector("#round");
+      const startButton = document.querySelector("#start");
+      const upgradePanel = document.querySelector("#upgrade-panel");
+      const nextRoundNode = document.querySelector("#next-round");
+      const bankCountNode = document.querySelector("#bank-count");
+      const upgradeGridNode = document.querySelector("#upgrade-grid");
+      const upgradeNoteNode = document.querySelector("#upgrade-note");
+      const weaponPanel = document.querySelector("#weapon-panel");
+      const weaponControls = document.querySelector("#weapon-controls");
+      const weaponHelp = document.querySelector("#weapon-help");
+      const weaponNameNode = document.querySelector("#weapon-name");
+      const ammoReadoutNode = document.querySelector("#ammo-readout");
+      const attackButton = document.querySelector("#attack-button");
+      const reloadButton = document.querySelector("#reload-button");
+      const touchJoystick = document.querySelector("#touch-joystick");
+      const joystickRing = document.querySelector("#joystick-ring");
+      const joystickKnob = document.querySelector("#joystick-knob");
+      const width = canvas.width;
+      const height = canvas.height;
+      const roundDuration = 45;
+      const keys = new Set();
+      const grassMarks = [];
+      const chickens = [];
+      const touchInput = { x: 0, y: 0 };
+      const player = { x: width * .49, y: height * .54, facing: 1 };
+      let secondsLeft = roundDuration;
+      let phase = "ready";
+      let lastFrame = 0;
+      let elapsed = 0;
+      let celebration = 0;
+      let round = 1;
+      let score = 0;
+      let chickenBalance = 0;
+      let health = 3;
+      let maxHealth = 3;
+      let moveSpeed = 205;
+      let pickupRadius = 25;
+      let hitProtection = 1.2;
+      let chickenFleeFactor = 1;
+      let zombieSpeedFactor = 1;
+      let activeOffers = [];
+      let autoAdvanceTimer = null;
+      let weapon = null;
+      let weaponCooldown = 0;
+      let reloadTimer = 0;
+      let joystickPointerId = null;
+      const attackEffects = [];
+      player.invulnerable = 0;
+
+      const upgradeCatalog = [
+        { id: "speed", icon: "🥾", name: "Running shoes", description: "+35 movement speed", price: 6, apply: () => { moveSpeed += 35; } },
+        { id: "range", icon: "🧲", name: "Chicken magnet", description: "+8 catch radius", price: 6, apply: () => { pickupRadius += 8; } },
+        { id: "health", icon: "💚", name: "Extra heart", description: "+1 max health", price: 8, apply: () => { maxHealth++; } },
+        { id: "protection", icon: "🧥", name: "Padded jacket", description: "+0.35 seconds protection after a hit", price: 8, apply: () => { hitProtection += .35; } },
+        { id: "corn", icon: "🌽", name: "Pocket corn", description: "Chickens run 15% slower", price: 4, apply: () => { chickenFleeFactor *= .85; } },
+        { id: "repellent", icon: "🧴", name: "Zombie repellent", description: "Zombie chickens move 18% slower", price: 8, apply: () => { zombieSpeedFactor *= .82; } }
+      ];
+
+      const weaponCatalog = {
+        knife: { id: "knife", name: "Knife", range: 90, damage: 1, cooldown: .24, speedModifier: 25, magazine: Infinity, ammo: Infinity, reserve: Infinity, reloadTime: 0 },
+        sniper: { id: "sniper", name: "Sniper", range: 420, damage: 2, cooldown: 1.05, speedModifier: -45, magazine: 5, ammo: 5, reserve: 20, reloadTime: 1.5 },
+        ak47: { id: "ak47", name: "AK-47", range: 220, damage: 1, cooldown: .16, speedModifier: -20, magazine: 30, ammo: 30, reserve: 90, reloadTime: 1.25 }
+      };
+
+      for (let i = 0; i < 145; i++) {
+        grassMarks.push({
+          x: 30 + Math.random() * (width - 60),
+          y: 28 + Math.random() * (height - 56),
+          size: 2 + Math.random() * 5,
+          shade: Math.random() > .5 ? "rgba(53,112,56,.13)" : "rgba(235,239,155,.19)"
+        });
+      }
+
+      function placeChicken(chicken, firstSpawn = false) {
+        let x, y;
+        do {
+          x = 55 + Math.random() * (width - 110);
+          y = 55 + Math.random() * (height - 110);
+        } while (firstSpawn && Math.hypot(x - player.x, y - player.y) < 180);
+        chicken.x = x;
+        chicken.y = y;
+        chicken.direction = Math.random() * Math.PI * 2;
+        chicken.wander = .5 + Math.random() * 1.5;
+        chicken.flap = Math.random() * 6;
+      }
+
+      function updateChickenBalance() {
+        scoreNode.textContent = chickenBalance;
+        bankCountNode.textContent = chickenBalance;
+      }
+
+      function resetJoystick() {
+        touchInput.x = 0;
+        touchInput.y = 0;
+        joystickPointerId = null;
+        joystickKnob.style.setProperty("--stick-x", "0px");
+        joystickKnob.style.setProperty("--stick-y", "0px");
+      }
+
+      function moveJoystick(event) {
+        const rect = joystickRing.getBoundingClientRect();
+        const radius = rect.width * .34;
+        if (radius === 0) return;
+        let x = event.clientX - (rect.left + rect.width / 2);
+        let y = event.clientY - (rect.top + rect.height / 2);
+        const distance = Math.hypot(x, y);
+        if (distance > radius) {
+          x = x / distance * radius;
+          y = y / distance * radius;
+        }
+        touchInput.x = x / radius;
+        touchInput.y = y / radius;
+        joystickKnob.style.setProperty("--stick-x", `${x}px`);
+        joystickKnob.style.setProperty("--stick-y", `${y}px`);
+      }
+
+      function updateWeaponReadout() {
+        if (!weapon) return;
+        weaponNameNode.textContent = weapon.name;
+        ammoReadoutNode.textContent = weapon.magazine === Infinity ? "Unlimited" : `${weapon.ammo} / ${weapon.reserve}`;
+        reloadButton.disabled = phase !== "playing" || weapon.magazine === Infinity || weapon.ammo === weapon.magazine || weapon.reserve === 0 || reloadTimer > 0;
+        reloadButton.textContent = reloadTimer > 0 ? "Reloading..." : "Reload";
+        attackButton.disabled = phase !== "playing" || reloadTimer > 0 || (weapon.magazine !== Infinity && weapon.ammo === 0 && weapon.reserve === 0);
+      }
+
+      function reloadWeapon() {
+        if (!weapon || phase !== "playing" || weapon.magazine === Infinity || weapon.ammo === weapon.magazine || weapon.reserve === 0 || reloadTimer > 0) return;
+        reloadTimer = weapon.reloadTime;
+        updateWeaponReadout();
+      }
+
+      function attack() {
+        if (!weapon || phase !== "playing" || weaponCooldown > 0 || reloadTimer > 0) return;
+        if (weapon.magazine !== Infinity) {
+          if (weapon.ammo === 0) {
+            reloadWeapon();
+            return;
+          }
+          weapon.ammo--;
+        }
+
+        weaponCooldown = weapon.cooldown;
+        let target = null;
+        let nearestDistance = weapon.range;
+        for (const chicken of chickens) {
+          if (!chicken.hostile) continue;
+          const distance = Math.hypot(chicken.x - player.x, chicken.y - player.y);
+          if (distance <= nearestDistance) {
+            target = chicken;
+            nearestDistance = distance;
+          }
+        }
+
+        if (target) {
+          target.health -= weapon.damage;
+          attackEffects.push({ x1: player.x, y1: player.y, x2: target.x, y2: target.y, color: weapon.id === "knife" ? "#fff2a1" : "#ffe17a", time: .12 });
+          if (target.health <= 0) chickens.splice(chickens.indexOf(target), 1);
+        }
+        updateWeaponReadout();
+      }
+
+      function selectWeapon(id) {
+        if (phase !== "weapon" || !weaponCatalog[id]) return;
+        weapon = { ...weaponCatalog[id] };
+        moveSpeed = Math.max(100, moveSpeed + weapon.speedModifier);
+        weaponCooldown = 0;
+        reloadTimer = 0;
+        weaponPanel.hidden = true;
+        weaponControls.hidden = false;
+        weaponHelp.hidden = false;
+        updateWeaponReadout();
+        startNextRound();
+      }
+
+      function startNextRound() {
+        window.clearTimeout(autoAdvanceTimer);
+        autoAdvanceTimer = null;
+        round++;
+        upgradePanel.hidden = true;
+        weaponPanel.hidden = true;
+        beginRound();
+      }
+
+      function showUpgradeOffers() {
+        const shuffled = [...upgradeCatalog];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        activeOffers = shuffled.slice(0, 3);
+        upgradeGridNode.replaceChildren();
+
+        for (const offer of activeOffers) {
+          const button = document.createElement("button");
+          button.className = "upgrade-card";
+          button.type = "button";
+          button.dataset.upgrade = offer.id;
+          button.disabled = chickenBalance < offer.price;
+
+          const icon = document.createElement("span");
+          icon.className = "upgrade-icon";
+          icon.setAttribute("aria-hidden", "true");
+          icon.textContent = offer.icon;
+
+          const copy = document.createElement("span");
+          copy.className = "upgrade-copy";
+          const name = document.createElement("strong");
+          name.textContent = offer.name;
+          const description = document.createElement("span");
+          description.textContent = offer.description;
+          const price = document.createElement("small");
+          price.textContent = `${offer.price} ${offer.price === 1 ? "chicken" : "chickens"}`;
+          copy.append(name, description, price);
+          button.append(icon, copy);
+          upgradeGridNode.append(button);
+        }
+
+        const affordableCount = activeOffers.filter(offer => chickenBalance >= offer.price).length;
+        if (affordableCount === 0) {
+          upgradeNoteNode.textContent = "Not enough chickens for these upgrades. Moving on...";
+          autoAdvanceTimer = window.setTimeout(() => {
+            if (phase === "upgrade") startNextRound();
+          }, 1500);
+        } else {
+          upgradeNoteNode.textContent = "Choose one upgrade you can afford for the next round.";
+        }
+      }
+
+      function drawFence() {
+        ctx.fillStyle = "#cfaa68";
+        ctx.fillRect(0, 0, width, 19);
+        ctx.fillRect(0, height - 19, width, 19);
+        ctx.fillRect(0, 0, 19, height);
+        ctx.fillRect(width - 19, 0, 19, height);
+        ctx.fillStyle = "#f2d391";
+        for (let x = 8; x < width; x += 38) {
+          ctx.fillRect(x, 0, 8, 19);
+          ctx.fillRect(x, height - 19, 8, 19);
+        }
+        for (let y = 8; y < height; y += 38) {
+          ctx.fillRect(0, y, 19, 8);
+          ctx.fillRect(width - 19, y, 19, 8);
+        }
+        ctx.strokeStyle = "rgba(105,76,37,.28)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 8); ctx.lineTo(width, 8);
+        ctx.moveTo(0, height - 8); ctx.lineTo(width, height - 8);
+        ctx.moveTo(8, 0); ctx.lineTo(8, height);
+        ctx.moveTo(width - 8, 0); ctx.lineTo(width - 8, height);
+        ctx.stroke();
+      }
+
+      function drawScenery() {
+        ctx.fillStyle = "#8fbd61";
+        ctx.fillRect(0, 0, width, height);
+        for (const mark of grassMarks) {
+          ctx.fillStyle = mark.shade;
+          ctx.beginPath();
+          ctx.ellipse(mark.x, mark.y, mark.size * 1.5, mark.size * .65, -.35, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.fillStyle = "rgba(205,170,104,.28)";
+        ctx.beginPath();
+        ctx.ellipse(174, 400, 113, 36, -.17, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#d8ba76";
+        ctx.beginPath();
+        ctx.ellipse(790, 108, 38, 24, -.14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#a17d45";
+        ctx.fillRect(754, 104, 72, 5);
+        ctx.fillStyle = "#ebd99a";
+        ctx.fillRect(758, 92, 65, 13);
+        ctx.fillRect(762, 85, 56, 9);
+
+        ctx.fillStyle = "#5f9b55";
+        ctx.beginPath();
+        ctx.ellipse(790, 430, 88, 34, .2, 0, Math.PI * 2);
+        ctx.fill();
+        for (let i = 0; i < 8; i++) {
+          const x = 730 + i * 17;
+          const y = 415 + (i % 3) * 10;
+          ctx.strokeStyle = "#d5df75";
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(x, y + 12); ctx.lineTo(x + 3, y); ctx.stroke();
+        }
+        drawFence();
+      }
+
+      function drawChicken(chicken) {
+        const bob = Math.sin(chicken.flap) * 1.7;
+        const featherColor = chicken.hostile ? "#a3ae78" : "#fff8dc";
+        ctx.save();
+        ctx.translate(chicken.x, chicken.y + bob);
+        ctx.fillStyle = chicken.hostile ? "rgba(64,46,49,.25)" : "rgba(40,67,38,.17)";
+        ctx.beginPath(); ctx.ellipse(0, 12, 17, 6, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#d79a39";
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-5, 9); ctx.lineTo(-6, 14); ctx.lineTo(-9, 15);
+        ctx.moveTo(5, 9); ctx.lineTo(6, 14); ctx.lineTo(9, 15);
+        ctx.stroke();
+        ctx.fillStyle = featherColor;
+        ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = chicken.hostile ? "#778656" : "#ede0b8";
+        ctx.beginPath(); ctx.ellipse(-5, 1, 7, 5, -.3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = featherColor;
+        ctx.beginPath(); ctx.arc(10, -8, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = chicken.hostile ? "#743f4b" : "#df6350";
+        ctx.beginPath(); ctx.arc(7, -16, 3, 0, Math.PI * 2); ctx.arc(12, -17, 3, 0, Math.PI * 2); ctx.arc(16, -14, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = chicken.hostile ? "#819052" : "#e5a63f";
+        ctx.beginPath(); ctx.moveTo(17, -8); ctx.lineTo(24, -5); ctx.lineTo(17, -3); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = chicken.hostile ? "#e2504a" : "#263b30";
+        ctx.beginPath(); ctx.arc(12, -10, chicken.hostile ? 2.2 : 1.5, 0, Math.PI * 2); ctx.fill();
+        if (chicken.hostile) {
+          ctx.fillStyle = "#f5d88a";
+          ctx.font = "bold 11px Trebuchet MS, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("!", 0, -24);
+        }
+        ctx.restore();
+      }
+
+      function drawPlayer() {
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        if (phase === "playing" && player.invulnerable > 0 && Math.floor(elapsed * 12) % 2 === 0) ctx.globalAlpha = .4;
+        ctx.fillStyle = "rgba(40,67,38,.2)";
+        ctx.beginPath(); ctx.ellipse(0, 18, 19, 7, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#376f50";
+        ctx.beginPath(); ctx.ellipse(0, 7, 13, 15, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#f2c9a2";
+        ctx.beginPath(); ctx.arc(0, -9, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#de7454";
+        ctx.fillRect(-11, 0, 22, 4);
+        ctx.fillStyle = "#d7a948";
+        ctx.beginPath(); ctx.ellipse(0, -14, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#edc965";
+        ctx.beginPath(); ctx.ellipse(0, -17, 11, 6, 0, Math.PI, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#203b2d";
+        ctx.beginPath(); ctx.arc(player.facing > 0 ? 4 : -4, -9, 1.5, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+
+      function drawOverlay(title, subtitle) {
+        ctx.fillStyle = "rgba(29,54,39,.34)";
+        ctx.fillRect(19, 19, width - 38, height - 38);
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#fff9e4";
+        ctx.font = "bold 43px Georgia, serif";
+        ctx.fillText(title, width / 2, height / 2 - 3);
+        ctx.fillStyle = "#fff9e4";
+        ctx.font = "700 15px Trebuchet MS, sans-serif";
+        ctx.fillText(subtitle, width / 2, height / 2 + 28);
+      }
+
+      function render() {
+        drawScenery();
+        for (const chicken of chickens) drawChicken(chicken);
+        if (phase === "playing" && pickupRadius > 25) {
+          ctx.save();
+          ctx.strokeStyle = "rgba(255,249,228,.55)";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 7]);
+          ctx.beginPath(); ctx.arc(player.x, player.y, pickupRadius, 0, Math.PI * 2); ctx.stroke();
+          ctx.restore();
+        }
+        drawPlayer();
+        if (phase === "ready") drawOverlay("Ready, ranch hand?", "START CHASING WHEN YOU'RE READY");
+        if (phase === "upgrade") drawOverlay("Round complete!", "CHOOSE AN UPGRADE BELOW");
+        if (phase === "weapon") drawOverlay("Pick your weapon!", "CHOOSE YOUR LOADOUT FOR ROUND 5");
+        if (phase === "gameover") drawOverlay("Out of health!", `${score} chickens caught across ${round} rounds`);
+        for (const effect of attackEffects) {
+          ctx.strokeStyle = effect.color;
+          ctx.globalAlpha = Math.min(1, effect.time / .12);
+          ctx.lineWidth = weapon?.id === "knife" ? 4 : 3;
+          ctx.beginPath(); ctx.moveTo(effect.x1, effect.y1); ctx.lineTo(effect.x2, effect.y2); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        if (celebration > 0) {
+          ctx.fillStyle = `rgba(255,249,228,${celebration * .3})`;
+          ctx.fillRect(19, 19, width - 38, height - 38);
+        }
+      }
+
+      function update(delta) {
+        elapsed += delta;
+        if (celebration > 0) celebration = Math.max(0, celebration - delta * 2.3);
+        player.invulnerable = Math.max(0, player.invulnerable - delta);
+        weaponCooldown = Math.max(0, weaponCooldown - delta);
+        for (let i = attackEffects.length - 1; i >= 0; i--) {
+          attackEffects[i].time -= delta;
+          if (attackEffects[i].time <= 0) attackEffects.splice(i, 1);
+        }
+        if (reloadTimer > 0) {
+          reloadTimer = Math.max(0, reloadTimer - delta);
+          if (reloadTimer === 0 && weapon && weapon.magazine !== Infinity) {
+            const loaded = Math.min(weapon.magazine - weapon.ammo, weapon.reserve);
+            weapon.ammo += loaded;
+            weapon.reserve -= loaded;
+            updateWeaponReadout();
+          }
+        }
+        if (keys.has("Space")) attack();
+        const horizontal = (keys.has("ArrowRight") ? 1 : 0) - (keys.has("ArrowLeft") ? 1 : 0) + touchInput.x;
+        const vertical = (keys.has("ArrowDown") ? 1 : 0) - (keys.has("ArrowUp") ? 1 : 0) + touchInput.y;
+        const length = Math.hypot(horizontal, vertical) || 1;
+        player.x = Math.max(38, Math.min(width - 38, player.x + horizontal / length * moveSpeed * delta));
+        player.y = Math.max(42, Math.min(height - 42, player.y + vertical / length * moveSpeed * delta));
+        if (horizontal) player.facing = Math.sign(horizontal);
+
+        for (const chicken of chickens) {
+          chicken.flap += delta * 9;
+          const dx = chicken.x - player.x;
+          const dy = chicken.y - player.y;
+          const distance = Math.hypot(dx, dy);
+          if (chicken.hostile) {
+            chicken.direction = Math.atan2(-dy, -dx) + Math.sin(elapsed * 4 + chicken.flap) * .2;
+            const speed = Math.min(145, 75 + round * 8) * zombieSpeedFactor;
+            chicken.x += Math.cos(chicken.direction) * speed * delta;
+            chicken.y += Math.sin(chicken.direction) * speed * delta;
+          } else if (distance < 145) {
+            const strength = (145 - distance) / 145;
+            chicken.direction = Math.atan2(dy, dx) + Math.sin(elapsed * 4 + chicken.flap) * .34;
+            chicken.x += Math.cos(chicken.direction) * (80 + strength * 105) * chickenFleeFactor * delta;
+            chicken.y += Math.sin(chicken.direction) * (80 + strength * 105) * chickenFleeFactor * delta;
+          } else {
+            chicken.direction += Math.sin(elapsed * chicken.wander + chicken.flap) * delta * .75;
+            chicken.x += Math.cos(chicken.direction) * 28 * delta;
+            chicken.y += Math.sin(chicken.direction) * 28 * delta;
+          }
+          chicken.x = Math.max(39, Math.min(width - 39, chicken.x));
+          chicken.y = Math.max(43, Math.min(height - 43, chicken.y));
+          if (chicken.hostile && distance < 28 && player.invulnerable <= 0) {
+            health = Math.max(0, health - 1);
+            healthNode.textContent = `${health} / ${maxHealth}`;
+            player.invulnerable = hitProtection;
+            chicken.x -= Math.cos(chicken.direction) * 55;
+            chicken.y -= Math.sin(chicken.direction) * 55;
+            if (health === 0) {
+              phase = "gameover";
+              startButton.hidden = false;
+              startButton.textContent = "Play again";
+              upgradePanel.hidden = true;
+              keys.clear();
+              break;
+            }
+          } else if (!chicken.hostile && distance < pickupRadius) {
+            score++;
+            chickenBalance++;
+            updateChickenBalance();
+            celebration = 1;
+            placeChicken(chicken, true);
+          }
+        }
+
+        if (phase !== "playing") return;
+        secondsLeft = Math.max(0, secondsLeft - delta);
+        timeNode.textContent = Math.ceil(secondsLeft);
+        if (secondsLeft <= 0) {
+          nextRoundNode.textContent = round + 1;
+          startButton.hidden = true;
+          keys.clear();
+          if (round === 4) {
+            phase = "weapon";
+            upgradePanel.hidden = true;
+            weaponPanel.hidden = false;
+            updateWeaponReadout();
+          } else {
+            phase = "upgrade";
+            upgradePanel.hidden = false;
+            weaponPanel.hidden = true;
+            showUpgradeOffers();
+          }
+        }
+      }
+
+      function frame(timestamp) {
+        const delta = Math.min((timestamp - (lastFrame || timestamp)) / 1000, .04);
+        lastFrame = timestamp;
+        if (phase === "playing") update(delta);
+        else if (joystickPointerId !== null) resetJoystick();
+        touchJoystick.hidden = phase !== "playing";
+        render();
+        requestAnimationFrame(frame);
+      }
+
+      function beginRound() {
+        secondsLeft = roundDuration;
+        elapsed = 0;
+        timeNode.textContent = String(roundDuration);
+        roundNode.textContent = round;
+        player.x = width * .49;
+        player.y = height * .54;
+        health = maxHealth;
+        healthNode.textContent = `${health} / ${maxHealth}`;
+        player.invulnerable = 1;
+        chickens.length = 0;
+        for (let i = 0; i < 3; i++) {
+          const chicken = { hostile: false };
+          placeChicken(chicken, true);
+          chickens.push(chicken);
+        }
+        const zombieCount = Math.min(1 + Math.floor((round - 1) / 2), 4) + (round === 5 ? 1 : 0);
+        for (let i = 0; i < zombieCount; i++) {
+          const chicken = { hostile: true, health: 2 };
+          placeChicken(chicken, true);
+          chickens.push(chicken);
+        }
+        phase = "playing";
+        startButton.hidden = Boolean(weapon);
+        startButton.textContent = "Restart run";
+        if (weapon) updateWeaponReadout();
+      }
+
+      function startGame() {
+        window.clearTimeout(autoAdvanceTimer);
+        autoAdvanceTimer = null;
+        score = 0;
+        chickenBalance = 0;
+        round = 1;
+        health = 3;
+        maxHealth = 3;
+        moveSpeed = 205;
+        pickupRadius = 25;
+        hitProtection = 1.2;
+        chickenFleeFactor = 1;
+        zombieSpeedFactor = 1;
+        activeOffers = [];
+        weapon = null;
+        weaponCooldown = 0;
+        reloadTimer = 0;
+        attackEffects.length = 0;
+        weaponControls.hidden = true;
+        weaponHelp.hidden = true;
+        updateChickenBalance();
+        healthNode.textContent = "3 / 3";
+        upgradePanel.hidden = true;
+        beginRound();
+      }
+
+      function selectUpgrade(id) {
+        const offer = activeOffers.find(item => item.id === id);
+        if (phase !== "upgrade" || !offer || chickenBalance < offer.price) return;
+        chickenBalance -= offer.price;
+        updateChickenBalance();
+        offer.apply();
+        healthNode.textContent = `${health} / ${maxHealth}`;
+        startNextRound();
+      }
+
+      startButton.addEventListener("click", startGame);
+      upgradePanel.addEventListener("click", event => {
+        const button = event.target.closest("[data-upgrade]");
+        if (button && phase === "upgrade") selectUpgrade(button.dataset.upgrade);
+      });
+      weaponPanel.addEventListener("click", event => {
+        const button = event.target.closest("[data-weapon]");
+        if (button) selectWeapon(button.dataset.weapon);
+      });
+      attackButton.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        if (phase === "playing") keys.add("Space");
+      });
+      for (const eventName of ["pointerup", "pointercancel", "pointerleave"]) {
+        attackButton.addEventListener(eventName, () => keys.delete("Space"));
+      }
+      reloadButton.addEventListener("click", reloadWeapon);
+      joystickRing.addEventListener("pointerdown", event => {
+        if (phase !== "playing") return;
+        event.preventDefault();
+        joystickPointerId = event.pointerId;
+        joystickRing.setPointerCapture(event.pointerId);
+        moveJoystick(event);
+      });
+      joystickRing.addEventListener("pointermove", event => {
+        if (event.pointerId === joystickPointerId) moveJoystick(event);
+      });
+      for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"]) {
+        joystickRing.addEventListener(eventName, event => {
+          if (event.pointerId === joystickPointerId) resetJoystick();
+        });
+      }
+      window.addEventListener("keydown", event => {
+        if (event.code === "Space") {
+          event.preventDefault();
+          if (phase === "playing") keys.add("Space");
+          return;
+        }
+        if (event.key.toLowerCase() === "r") {
+          event.preventDefault();
+          if (!event.repeat) reloadWeapon();
+          return;
+        }
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+          event.preventDefault();
+          if (phase === "ready" || phase === "gameover") startGame();
+          if (phase === "playing") keys.add(event.key);
+        }
+      });
+      window.addEventListener("keyup", event => {
+        keys.delete(event.key);
+        if (event.code === "Space") keys.delete("Space");
+      });
+      window.addEventListener("blur", () => {
+        keys.clear();
+        resetJoystick();
+      });
+
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
