@@ -104,6 +104,28 @@
     }
     .fullscreen-button:hover { background: #286341; }
     .fullscreen-button:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+    .field-controls { position: absolute; z-index: 5; top: 10px; left: 10px; display: flex; align-items: flex-start; gap: 6px; }
+    .field-control-button, .sound-menu > summary {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 1px solid rgba(32, 59, 45, .55);
+      border-radius: 6px;
+      color: #fffdf5;
+      background: rgba(32, 59, 45, .82);
+      font: 700 20px "Trebuchet MS", sans-serif;
+      cursor: pointer;
+      list-style: none;
+    }
+    .field-control-button:hover, .sound-menu[open] > summary { background: #286341; }
+    .field-control-button:focus-visible, .sound-menu > summary:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+    .sound-menu { position: relative; }
+    .sound-menu > summary::-webkit-details-marker { display: none; }
+    .sound-popover { position: absolute; top: 46px; left: 0; display: grid; width: 190px; gap: 9px; padding: 11px; border: 1px solid rgba(32, 59, 45, .35); border-radius: 6px; color: var(--ink); background: #fffdf5; box-shadow: 0 3px 10px rgba(32, 59, 45, .2); font-size: 11px; font-weight: 800; }
+    .sound-toggle { display: flex; align-items: center; gap: 7px; }
+    .sound-volume { display: grid; grid-template-columns: 1fr auto; gap: 5px 8px; align-items: center; }
+    .sound-volume input { grid-column: 1 / -1; width: 100%; accent-color: var(--green); }
     .active-effects-panel {
       position: absolute;
       z-index: 4;
@@ -227,6 +249,7 @@
     .upgrade-card:disabled { color: #849085; background: #ecebdd; cursor: not-allowed; opacity: .72; }
     .upgrade-card:disabled:hover { border-color: rgba(32, 59, 45, .2); box-shadow: none; transform: none; }
     .upgrade-note { margin: 9px 0 0; color: var(--muted); font-size: 10px; font-weight: 700; }
+    .upgrade-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 8px; }
     .weapon-controls { display: flex; align-items: center; gap: 7px; }
     .weapon-readout { display: grid; gap: 2px; min-width: 62px; }
     .weapon-name { color: var(--muted); font-size: 9px; font-weight: 900; letter-spacing: .7px; text-transform: uppercase; }
@@ -329,6 +352,17 @@
     <section class="game-shell" aria-label="Chicken Chase game">
       <div class="field-wrap">
         <canvas id="field" width="960" height="540" aria-label="A farmer chasing chickens across a grassy field"></canvas>
+        <div class="field-controls" aria-label="Game controls">
+          <button class="field-control-button" id="pause-button" type="button" title="Pause game" aria-label="Pause game" disabled>⏸</button>
+          <button class="field-control-button" id="restart-button" type="button" title="Restart run" aria-label="Restart run">↻</button>
+          <details class="sound-menu">
+            <summary title="Sound settings" aria-label="Sound settings">♫</summary>
+            <div class="sound-popover">
+              <label class="sound-toggle"><input id="sound-enabled" type="checkbox" checked> Sound effects</label>
+              <label class="sound-volume" for="sound-volume">Volume <output id="sound-volume-value">35%</output><input id="sound-volume" type="range" min="0" max="100" value="35"></label>
+            </div>
+          </details>
+        </div>
         <button class="fullscreen-button" id="fullscreen-button" type="button" title="Enter fullscreen" aria-label="Enter fullscreen">⛶</button>
         <aside class="active-effects-panel" id="active-effects-panel" aria-label="Current buffs and debuffs" hidden>
           <p class="active-effects-heading">BUFFS &amp; DEBUFFS</p>
@@ -357,7 +391,11 @@
           <p><span id="bank-count">0</span> chickens to spend</p>
         </div>
         <div class="upgrade-grid" id="upgrade-grid"></div>
-        <p class="upgrade-note" id="upgrade-note" aria-live="polite">Choose one upgrade for the next round.</p>
+        <p class="upgrade-note" id="upgrade-note" aria-live="polite">Buy any affordable upgrades, then continue.</p>
+        <div class="upgrade-actions">
+          <button class="combat-button" id="reroll-upgrades" type="button">Reroll (2 eggs)</button>
+          <button class="combat-button" id="continue-round" type="button">Continue to next round</button>
+        </div>
       </section>
       <section class="upgrade-panel" id="weapon-panel" aria-labelledby="weapon-title" hidden>
         <div class="upgrade-heading">
@@ -423,6 +461,11 @@
       const startButton = document.querySelector("#start");
       const gameShell = document.querySelector(".game-shell");
       const fullscreenButton = document.querySelector("#fullscreen-button");
+      const pauseButton = document.querySelector("#pause-button");
+      const restartButton = document.querySelector("#restart-button");
+      const soundEnabledInput = document.querySelector("#sound-enabled");
+      const soundVolumeInput = document.querySelector("#sound-volume");
+      const soundVolumeValue = document.querySelector("#sound-volume-value");
       const activeEffectsPanel = document.querySelector("#active-effects-panel");
       const activeEffectsList = document.querySelector("#active-effects-list");
       const upgradePanel = document.querySelector("#upgrade-panel");
@@ -430,6 +473,8 @@
       const bankCountNode = document.querySelector("#bank-count");
       const upgradeGridNode = document.querySelector("#upgrade-grid");
       const upgradeNoteNode = document.querySelector("#upgrade-note");
+      const rerollUpgradesButton = document.querySelector("#reroll-upgrades");
+      const continueRoundButton = document.querySelector("#continue-round");
       const weaponPanel = document.querySelector("#weapon-panel");
       const armorPanel = document.querySelector("#armor-panel");
       const weaponControls = document.querySelector("#weapon-controls");
@@ -452,6 +497,11 @@
       const player = { x: width * .49, y: height * .54, facing: 1 };
       let secondsLeft = roundDuration;
       let phase = "ready";
+      let pausedPhase = null;
+      let countdownRemaining = 0;
+      let audioContext = null;
+      let soundEnabled = true;
+      let soundVolume = .35;
       let lastFrame = 0;
       let elapsed = 0;
       let celebration = 0;
@@ -469,6 +519,8 @@
       let chickenFleeFactor = 1;
       let zombieSpeedFactor = 1;
       let activeOffers = [];
+      const purchasedOfferIds = new Set();
+      let rerollCount = 0;
       let autoAdvanceTimer = null;
       let weapon = null;
       let weaponCooldown = 0;
@@ -549,6 +601,55 @@
         bankCountNode.textContent = chickenBalance;
       }
 
+      function initializeAudio() {
+        if (!soundEnabled) return;
+        const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextConstructor) return;
+        if (!audioContext) audioContext = new AudioContextConstructor();
+        if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+      }
+
+      function playTone(frequency, duration, type = "sine") {
+        if (!soundEnabled || soundVolume <= 0 || !audioContext) return;
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const now = audioContext.currentTime;
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, now);
+        gain.gain.setValueAtTime(soundVolume * .12, now);
+        gain.gain.exponentialRampToValueAtTime(.001, now + duration);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(now);
+        oscillator.stop(now + duration);
+      }
+
+      function syncPauseButton() {
+        const canPause = phase === "playing" || phase === "countdown" || phase === "paused";
+        pauseButton.disabled = !canPause;
+        const paused = phase === "paused";
+        const label = paused ? "Resume game" : "Pause game";
+        pauseButton.textContent = paused ? "▶" : "⏸";
+        pauseButton.title = label;
+        pauseButton.setAttribute("aria-label", label);
+      }
+
+      function togglePause() {
+        if (phase === "paused") {
+          phase = pausedPhase || "playing";
+          pausedPhase = null;
+        } else if (phase === "playing" || phase === "countdown") {
+          pausedPhase = phase;
+          phase = "paused";
+          keys.clear();
+          resetJoystick();
+        } else {
+          return;
+        }
+        updateWeaponReadout();
+        syncPauseButton();
+      }
+
       function renderActiveEffects() {
         activeEffectsList.replaceChildren();
         for (const effect of activeEffects.values()) {
@@ -576,7 +677,7 @@
 
       function dropGoldenLoot(chicken) {
         if (Math.random() < .5) {
-          goldenDrops.push({ x: chicken.x, y: chicken.y, kind: "coins", amount: 10 + Math.floor(Math.random() * 11) });
+          goldenDrops.push({ x: chicken.x, y: chicken.y, kind: "coins", amount: 5 + Math.floor(Math.random() * 6) });
           return;
         }
 
@@ -610,6 +711,7 @@
         dropGoldenLoot(chicken);
         respawnCollectibleChicken(chicken);
         celebration = 1;
+        playTone(920, .16, "triangle");
       }
 
       function resetJoystick() {
@@ -654,6 +756,7 @@
 
       function damagePlayer(amount = 1) {
         if (phase !== "playing" || player.invulnerable > 0) return false;
+        playTone(145, .2, "sawtooth");
         health = Math.max(0, health - amount);
         healthNode.textContent = `${health} / ${maxHealth}`;
         player.invulnerable = hitProtection + roundHitProtectionBonus;
@@ -678,6 +781,7 @@
         }
 
         weaponCooldown = weapon.cooldown;
+        playTone(weapon.id === "knife" ? 480 : weapon.id === "sniper" ? 190 : 310, .055, weapon.id === "knife" ? "triangle" : "square");
         let target = null;
         let nearestDistance = weapon.range;
         for (const chicken of chickens) {
@@ -753,7 +857,27 @@
         return Math.ceil(offer.price * Math.pow(1.1, round));
       }
 
+      function getUpgradeRerollCost() {
+        return Math.ceil(2 * Math.pow(1.1, rerollCount));
+      }
+
+      function refreshUpgradeAvailability() {
+        let affordableCount = 0;
+        for (const button of upgradeGridNode.querySelectorAll("[data-upgrade]")) {
+          const offer = activeOffers.find(item => item.id === button.dataset.upgrade);
+          button.disabled = !offer || purchasedOfferIds.has(offer.id) || chickenBalance < getUpgradePrice(offer);
+          if (!button.disabled) affordableCount++;
+        }
+        const rerollCost = getUpgradeRerollCost();
+        rerollUpgradesButton.disabled = chickenBalance < rerollCost;
+        rerollUpgradesButton.textContent = `Reroll (${rerollCost} eggs)`;
+        upgradeNoteNode.textContent = affordableCount > 0
+          ? "Buy any affordable upgrades, then continue."
+          : "No more affordable upgrades. Continue when ready.";
+      }
+
       function showUpgradeOffers() {
+        purchasedOfferIds.clear();
         const shuffled = [...upgradeCatalog];
         for (let i = shuffled.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -788,15 +912,20 @@
           upgradeGridNode.append(button);
         }
 
-        const affordableCount = activeOffers.filter(offer => chickenBalance >= getUpgradePrice(offer)).length;
-        if (affordableCount === 0) {
-          upgradeNoteNode.textContent = "Not enough chickens for these upgrades. Moving on...";
-          autoAdvanceTimer = window.setTimeout(() => {
-            if (phase === "upgrade") startNextRound();
-          }, 1500);
-        } else {
-          upgradeNoteNode.textContent = "Choose one upgrade you can afford for the next round.";
+        refreshUpgradeAvailability();
+      }
+
+      function rerollUpgradeOffers(free = false) {
+        if (phase !== "upgrade") return;
+        if (!free) {
+          const cost = getUpgradeRerollCost();
+          if (chickenBalance < cost) return;
+          chickenBalance -= cost;
+          rerollCount++;
+          updateChickenBalance();
         }
+        showUpgradeOffers();
+        if (free) upgradeNoteNode.textContent = "All offers purchased. Here is a free reroll!";
       }
 
       function drawFence() {
@@ -992,6 +1121,8 @@
         }
         drawPlayer();
         if (phase === "ready") drawOverlay("Ready, ranch hand?", "START CHASING WHEN YOU'RE READY");
+        if (phase === "countdown") drawOverlay("Get ready!", String(Math.ceil(countdownRemaining)));
+        if (phase === "paused") drawOverlay("Paused", "GAME PAUSED");
         if (phase === "upgrade") drawOverlay("Round complete!", "CHOOSE AN UPGRADE BELOW");
         if (phase === "weapon") drawOverlay("Pick your weapon!", "CHOOSE YOUR LOADOUT FOR ROUND 5");
         if (phase === "armor") drawOverlay("Choose your armor!", "PICK YOUR ARMOR FOR ROUND 15");
@@ -1111,6 +1242,7 @@
             if (chicken.golden) {
               defeatGoldenChicken(chicken);
             } else {
+              playTone(620, .075, "sine");
               score++;
               chickenBalance++;
               updateChickenBalance();
@@ -1124,8 +1256,13 @@
         for (let i = goldenDrops.length - 1; i >= 0; i--) {
           const drop = goldenDrops[i];
           if (Math.hypot(drop.x - player.x, drop.y - player.y) >= pickupRadius + 11) continue;
-          if (drop.kind === "coins") chickenBalance += drop.amount;
-          else drop.apply();
+          if (drop.kind === "coins") {
+            chickenBalance += drop.amount;
+            playTone(790, .1, "triangle");
+          } else {
+            drop.apply();
+            playTone(560, .12, "sine");
+          }
           goldenDrops.splice(i, 1);
           updateChickenBalance();
           healthNode.textContent = `${health} / ${maxHealth}`;
@@ -1174,7 +1311,19 @@
         const delta = Math.min((timestamp - (lastFrame || timestamp)) / 1000, .04);
         lastFrame = timestamp;
         if (phase === "playing") update(delta);
+        else if (phase === "countdown") {
+          const previousCount = Math.ceil(countdownRemaining);
+          countdownRemaining = Math.max(0, countdownRemaining - delta);
+          const currentCount = Math.ceil(countdownRemaining);
+          if (currentCount < previousCount) playTone(currentCount === 0 ? 660 : 440, .08, "sine");
+          if (countdownRemaining === 0) {
+            phase = "playing";
+            player.invulnerable = 1;
+            updateWeaponReadout();
+          }
+        }
         else if (joystickPointerId !== null) resetJoystick();
+        syncPauseButton();
         touchJoystick.hidden = phase !== "playing";
         render();
         requestAnimationFrame(frame);
@@ -1192,7 +1341,7 @@
         player.y = height * .54;
         health = maxHealth;
         healthNode.textContent = `${health} / ${maxHealth}`;
-        player.invulnerable = 1;
+        player.invulnerable = 0;
         chickens.length = 0;
         goldenDrops.length = 0;
         pendingZombieRespawns.length = 0;
@@ -1224,7 +1373,10 @@
           placeChickenOffscreen(boss);
           chickens.push(boss);
         }
-        phase = "playing";
+        countdownRemaining = 5;
+        pausedPhase = null;
+        phase = "countdown";
+        syncPauseButton();
         startButton.hidden = Boolean(weapon);
         startButton.textContent = "Restart run";
         if (weapon) updateWeaponReadout();
@@ -1245,6 +1397,8 @@
         chickenFleeFactor = 1;
         zombieSpeedFactor = 1;
         activeOffers = [];
+        purchasedOfferIds.clear();
+        rerollCount = 0;
         activeEffects.clear();
         renderActiveEffects();
         weapon = null;
@@ -1270,11 +1424,29 @@
         chickenBalance -= price;
         updateChickenBalance();
         offer.apply();
+        purchasedOfferIds.add(offer.id);
         healthNode.textContent = `${health} / ${maxHealth}`;
-        startNextRound();
+        if (purchasedOfferIds.size === activeOffers.length) rerollUpgradeOffers(true);
+        else refreshUpgradeAvailability();
       }
 
       startButton.addEventListener("click", startGame);
+      rerollUpgradesButton.addEventListener("click", () => rerollUpgradeOffers());
+      pauseButton.addEventListener("click", togglePause);
+      restartButton.addEventListener("click", startGame);
+      soundEnabledInput.addEventListener("change", () => {
+        soundEnabled = soundEnabledInput.checked;
+        if (soundEnabled) initializeAudio();
+      });
+      soundVolumeInput.addEventListener("input", () => {
+        soundVolume = Number(soundVolumeInput.value) / 100;
+        soundVolumeValue.value = `${soundVolumeInput.value}%`;
+      });
+      document.addEventListener("pointerdown", initializeAudio, { once: true });
+      window.addEventListener("keydown", initializeAudio, { once: true });
+      continueRoundButton.addEventListener("click", () => {
+        if (phase === "upgrade") startNextRound();
+      });
       if (!document.fullscreenEnabled || !gameShell.requestFullscreen) fullscreenButton.hidden = true;
       fullscreenButton.addEventListener("click", async () => {
         try {
@@ -1326,6 +1498,11 @@
         });
       }
       window.addEventListener("keydown", event => {
+        if (event.key === "Escape" || event.key.toLowerCase() === "p") {
+          event.preventDefault();
+          if (!event.repeat) togglePause();
+          return;
+        }
         if (event.code === "Space") {
           event.preventDefault();
           if (phase === "playing") keys.add("Space");
