@@ -86,6 +86,69 @@
 
     .field-wrap { position: relative; }
     canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+    .fullscreen-button {
+      position: absolute;
+      z-index: 3;
+      top: 10px;
+      right: 10px;
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 1px solid rgba(32, 59, 45, .55);
+      border-radius: 6px;
+      color: #fffdf5;
+      background: rgba(32, 59, 45, .82);
+      font: 700 22px "Trebuchet MS", sans-serif;
+      cursor: pointer;
+    }
+    .fullscreen-button:hover { background: #286341; }
+    .fullscreen-button:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+    .active-effects-panel {
+      position: absolute;
+      z-index: 4;
+      top: 56px;
+      right: 10px;
+      width: min(230px, calc(100% - 20px));
+      max-height: 132px;
+      overflow-y: auto;
+      padding: 8px 10px;
+      border: 1px solid rgba(32, 59, 45, .4);
+      border-radius: 6px;
+      background: rgba(255, 253, 245, .94);
+      box-shadow: 0 2px 8px rgba(32, 59, 45, .2);
+    }
+    .active-effects-heading { margin: 0 0 5px; color: var(--muted); font-size: 9px; font-weight: 900; letter-spacing: .8px; }
+    .active-effects-list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+    .active-effect { font-size: 10px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+    .active-effect-buff { color: var(--green); }
+    .active-effect-debuff { color: #b65b42; }
+
+    .game-shell:fullscreen {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      flex-direction: column;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .game-shell:fullscreen .field-wrap {
+      display: flex;
+      min-height: 0;
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+      background: #84b957;
+    }
+    .game-shell:fullscreen canvas {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: auto;
+      object-fit: contain;
+    }
+    .game-shell:fullscreen .hud { flex: 0 0 auto; }
+    .game-shell:fullscreen .upgrade-panel { max-height: 35vh; overflow-y: auto; }
 
     .touch-joystick {
       display: none;
@@ -266,6 +329,11 @@
     <section class="game-shell" aria-label="Chicken Chase game">
       <div class="field-wrap">
         <canvas id="field" width="960" height="540" aria-label="A farmer chasing chickens across a grassy field"></canvas>
+        <button class="fullscreen-button" id="fullscreen-button" type="button" title="Enter fullscreen" aria-label="Enter fullscreen">⛶</button>
+        <aside class="active-effects-panel" id="active-effects-panel" aria-label="Current buffs and debuffs" hidden>
+          <p class="active-effects-heading">BUFFS &amp; DEBUFFS</p>
+          <ul class="active-effects-list" id="active-effects-list"></ul>
+        </aside>
         <div class="touch-joystick" id="touch-joystick" hidden>
           <div class="joystick-ring" id="joystick-ring" role="application" aria-label="Movement joystick"><div class="joystick-knob" id="joystick-knob"></div></div>
         </div>
@@ -353,6 +421,10 @@
       const healthNode = document.querySelector("#health");
       const roundNode = document.querySelector("#round");
       const startButton = document.querySelector("#start");
+      const gameShell = document.querySelector(".game-shell");
+      const fullscreenButton = document.querySelector("#fullscreen-button");
+      const activeEffectsPanel = document.querySelector("#active-effects-panel");
+      const activeEffectsList = document.querySelector("#active-effects-list");
       const upgradePanel = document.querySelector("#upgrade-panel");
       const nextRoundNode = document.querySelector("#next-round");
       const bankCountNode = document.querySelector("#bank-count");
@@ -406,28 +478,29 @@
       const attackEffects = [];
       const zombieShots = [];
       const goldenDrops = [];
+      const activeEffects = new Map();
       player.invulnerable = 0;
 
       const upgradeCatalog = [
-        { id: "speed", icon: "🥾", name: "Running shoes", description: "+35 movement speed", price: 6, apply: () => { moveSpeed += 35; } },
-        { id: "range", icon: "🧲", name: "Chicken magnet", description: "+8 catch radius", price: 6, apply: () => { pickupRadius += 8; } },
-        { id: "health", icon: "💚", name: "Extra heart", description: "+1 max health", price: 8, apply: () => { maxHealth++; } },
-        { id: "protection", icon: "🧥", name: "Padded jacket", description: "+0.35 seconds protection after a hit", price: 8, apply: () => { hitProtection += .35; } },
-        { id: "corn", icon: "🌽", name: "Pocket corn", description: "Chickens run 15% slower", price: 4, apply: () => { chickenFleeFactor *= .85; } },
-        { id: "repellent", icon: "🧴", name: "Zombie repellent", description: "Zombie chickens move 18% slower", price: 8, apply: () => { zombieSpeedFactor *= .82; } },
-        { id: "extra-chicken", icon: "🐣", name: "Extra chicken", description: "+1 collectible chicken each round", price: 50, apply: () => { bonusChickenCount++; } }
+        { id: "speed", icon: "🥾", name: "Running shoes", description: "+35 movement speed", price: 6, apply: () => { moveSpeed += 35; addActiveEffect("upgrade-speed", "buff", "Running shoes: +35 speed"); } },
+        { id: "range", icon: "🧲", name: "Chicken magnet", description: "+8 catch radius", price: 6, apply: () => { pickupRadius += 8; addActiveEffect("upgrade-range", "buff", "Chicken magnet: +8 catch radius"); } },
+        { id: "health", icon: "💚", name: "Extra heart", description: "+1 max health", price: 8, apply: () => { maxHealth++; addActiveEffect("upgrade-health", "buff", "Extra heart: +1 max health"); } },
+        { id: "protection", icon: "🧥", name: "Padded jacket", description: "+0.35 seconds protection after a hit", price: 8, apply: () => { hitProtection += .35; addActiveEffect("upgrade-protection", "buff", "Padded jacket: +0.35s protection"); } },
+        { id: "corn", icon: "🌽", name: "Pocket corn", description: "Chickens run 15% slower", price: 4, apply: () => { chickenFleeFactor *= .85; addActiveEffect("upgrade-corn", "buff", "Pocket corn: chickens 15% slower"); } },
+        { id: "repellent", icon: "🧴", name: "Zombie repellent", description: "Zombie chickens move 18% slower", price: 8, apply: () => { zombieSpeedFactor *= .82; addActiveEffect("upgrade-repellent", "buff", "Repellent: zombies 18% slower"); } },
+        { id: "extra-chicken", icon: "🐣", name: "Extra chicken", description: "+1 collectible chicken each round", price: 50, apply: () => { bonusChickenCount++; addActiveEffect("upgrade-chicken", "buff", "Extra chicken: +1 each round"); } }
       ];
 
       const weaponCatalog = {
-        knife: { id: "knife", name: "Knife", range: 90, damage: 1, cooldown: .24, speedModifier: 25, magazine: Infinity, ammo: Infinity, reserve: Infinity, reloadTime: 0 },
-        sniper: { id: "sniper", name: "Sniper", range: 420, damage: 2, cooldown: 1.05, speedModifier: -45, magazine: 5, ammo: 5, reserve: 20, reloadTime: 1.5 },
-        ak47: { id: "ak47", name: "AK-47", range: 220, damage: 1, cooldown: .16, speedModifier: -20, magazine: 30, ammo: 30, reserve: 90, reloadTime: 1.25 }
+        knife: { id: "knife", name: "Knife", range: 90, damage: 1, cooldown: .24, speedModifier: 25, magazine: Infinity, ammo: Infinity, reserve: Infinity, reloadTime: 0, perk: "Quick strikes, +25 movement speed", debuff: "90 px reach" },
+        sniper: { id: "sniper", name: "Sniper", range: 420, damage: 2, cooldown: 1.05, speedModifier: -45, magazine: 5, ammo: 5, reserve: 20, reloadTime: 1.5, perk: "420 px range, 2 damage", debuff: "Slow shots, -45 movement speed" },
+        ak47: { id: "ak47", name: "AK-47", range: 220, damage: 1, cooldown: .16, speedModifier: -20, magazine: 30, ammo: 30, reserve: 90, reloadTime: 1.25, perk: "Rapid automatic fire", debuff: "-20 movement speed, frequent reloads" }
       };
 
       const armorCatalog = {
-        bulwark: { apply: () => { maxHealth += 2; moveSpeed = Math.max(100, moveSpeed - 35); } },
-        scout: { apply: () => { moveSpeed += 30; maxHealth = Math.max(1, maxHealth - 1); health = Math.min(health, maxHealth); } },
-        guardian: { apply: () => { hitProtection += .6; moveSpeed = Math.max(100, moveSpeed - 15); } }
+        bulwark: { apply: () => { maxHealth += 2; moveSpeed = Math.max(100, moveSpeed - 35); }, perk: "+2 max health", debuff: "-35 movement speed" },
+        scout: { apply: () => { moveSpeed += 30; maxHealth = Math.max(1, maxHealth - 1); health = Math.min(health, maxHealth); }, perk: "+30 movement speed", debuff: "-1 max health" },
+        guardian: { apply: () => { hitProtection += .6; moveSpeed = Math.max(100, moveSpeed - 15); }, perk: "+0.6s hit protection", debuff: "-15 movement speed" }
       };
 
       for (let i = 0; i < 145; i++) {
@@ -476,6 +549,31 @@
         bankCountNode.textContent = chickenBalance;
       }
 
+      function renderActiveEffects() {
+        activeEffectsList.replaceChildren();
+        for (const effect of activeEffects.values()) {
+          const item = document.createElement("li");
+          item.className = `active-effect active-effect-${effect.kind}`;
+          item.textContent = `${effect.label}${effect.count > 1 ? ` x${effect.count}` : ""}`;
+          activeEffectsList.append(item);
+        }
+        activeEffectsPanel.hidden = activeEffects.size === 0;
+      }
+
+      function addActiveEffect(id, kind, label) {
+        const effect = activeEffects.get(id);
+        if (effect) effect.count++;
+        else activeEffects.set(id, { kind, label, count: 1 });
+        renderActiveEffects();
+      }
+
+      function clearRoundActiveEffects() {
+        for (const id of activeEffects.keys()) {
+          if (id.startsWith("round-")) activeEffects.delete(id);
+        }
+        renderActiveEffects();
+      }
+
       function dropGoldenLoot(chicken) {
         if (Math.random() < .5) {
           goldenDrops.push({ x: chicken.x, y: chicken.y, kind: "coins", amount: 10 + Math.floor(Math.random() * 11) });
@@ -483,9 +581,9 @@
         }
 
         const buffs = [
-          { icon: "+", apply: () => { roundSpeedBonus += 15; } },
-          { icon: "♥", apply: () => { health = Math.min(maxHealth, health + 1); } },
-          { icon: "✚", apply: () => { roundHitProtectionBonus += .25; } }
+          { icon: "+", apply: () => { roundSpeedBonus += 15; addActiveEffect("round-speed", "buff", "Gold boost: +15 speed this round"); } },
+          { icon: "♥", apply: () => { health = Math.min(maxHealth, health + 1); addActiveEffect("round-heart", "buff", "Gold heart: +1 health this round"); } },
+          { icon: "✚", apply: () => { roundHitProtectionBonus += .25; addActiveEffect("round-protection", "buff", "Gold guard: +0.25s protection this round"); } }
         ];
         const buff = buffs[Math.floor(Math.random() * buffs.length)];
         goldenDrops.push({ x: chicken.x, y: chicken.y, kind: "buff", ...buff });
@@ -610,6 +708,8 @@
         if (phase !== "weapon" || !weaponCatalog[id]) return;
         weapon = { ...weaponCatalog[id] };
         moveSpeed = Math.max(100, moveSpeed + weapon.speedModifier);
+        addActiveEffect("weapon-perk", "buff", `${weapon.name}: ${weapon.perk}`);
+        addActiveEffect("weapon-debuff", "debuff", `${weapon.name}: ${weapon.debuff}`);
         weaponCooldown = 0;
         reloadTimer = 0;
         weaponRoundsPlayed = 0;
@@ -622,7 +722,10 @@
 
       function selectArmor(id) {
         if (phase !== "armor" || !armorCatalog[id]) return;
-        armorCatalog[id].apply();
+        const armor = armorCatalog[id];
+        armor.apply();
+        addActiveEffect("armor-perk", "buff", `Armor: ${armor.perk}`);
+        addActiveEffect("armor-debuff", "debuff", `Armor: ${armor.debuff}`);
         armorPanel.hidden = true;
         healthNode.textContent = `${health} / ${maxHealth}`;
         startNextRound();
@@ -1082,6 +1185,7 @@
         elapsed = 0;
         roundSpeedBonus = 0;
         roundHitProtectionBonus = 0;
+        clearRoundActiveEffects();
         timeNode.textContent = String(roundDuration);
         roundNode.textContent = round;
         player.x = width * .49;
@@ -1141,6 +1245,8 @@
         chickenFleeFactor = 1;
         zombieSpeedFactor = 1;
         activeOffers = [];
+        activeEffects.clear();
+        renderActiveEffects();
         weapon = null;
         weaponCooldown = 0;
         reloadTimer = 0;
@@ -1169,6 +1275,21 @@
       }
 
       startButton.addEventListener("click", startGame);
+      if (!document.fullscreenEnabled || !gameShell.requestFullscreen) fullscreenButton.hidden = true;
+      fullscreenButton.addEventListener("click", async () => {
+        try {
+          if (document.fullscreenElement === gameShell) await document.exitFullscreen();
+          else await gameShell.requestFullscreen();
+        } catch {
+          fullscreenButton.title = "Fullscreen is unavailable";
+        }
+      });
+      document.addEventListener("fullscreenchange", () => {
+        const isFullscreen = document.fullscreenElement === gameShell;
+        const label = isFullscreen ? "Exit fullscreen" : "Enter fullscreen";
+        fullscreenButton.title = label;
+        fullscreenButton.setAttribute("aria-label", label);
+      });
       upgradePanel.addEventListener("click", event => {
         const button = event.target.closest("[data-upgrade]");
         if (button && phase === "upgrade") selectUpgrade(button.dataset.upgrade);
