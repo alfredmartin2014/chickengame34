@@ -312,6 +312,26 @@
         </div>
         <p class="upgrade-note">Hold Space or Attack to fire. Reload with R or the Reload button.</p>
       </section>
+      <section class="upgrade-panel" id="armor-panel" aria-labelledby="armor-title" hidden>
+        <div class="upgrade-heading">
+          <div><p class="upgrade-kicker">ROUND 15 ARMOR</p><h2 id="armor-title">Choose your armor</h2></div>
+          <p>Pick one to keep</p>
+        </div>
+        <div class="upgrade-grid">
+          <button class="upgrade-card weapon-card" type="button" data-armor="bulwark">
+            <span class="upgrade-icon" aria-hidden="true">🛡️</span>
+            <span class="upgrade-copy"><strong>Bulwark Plate</strong><span class="weapon-perk">Perk: +2 max health</span><span class="weapon-debuff">Debuff: -35 movement speed</span></span>
+          </button>
+          <button class="upgrade-card weapon-card" type="button" data-armor="scout">
+            <span class="upgrade-icon" aria-hidden="true">🥋</span>
+            <span class="upgrade-copy"><strong>Scout Mail</strong><span class="weapon-perk">Perk: +30 movement speed</span><span class="weapon-debuff">Debuff: -1 max health</span></span>
+          </button>
+          <button class="upgrade-card weapon-card" type="button" data-armor="guardian">
+            <span class="upgrade-icon" aria-hidden="true">🧥</span>
+            <span class="upgrade-copy"><strong>Guardian Shell</strong><span class="weapon-perk">Perk: +0.6s hit protection</span><span class="weapon-debuff">Debuff: -15 movement speed</span></span>
+          </button>
+        </div>
+      </section>
     </section>
 
     <footer class="bottomline">
@@ -339,6 +359,7 @@
       const upgradeGridNode = document.querySelector("#upgrade-grid");
       const upgradeNoteNode = document.querySelector("#upgrade-note");
       const weaponPanel = document.querySelector("#weapon-panel");
+      const armorPanel = document.querySelector("#armor-panel");
       const weaponControls = document.querySelector("#weapon-controls");
       const weaponHelp = document.querySelector("#weapon-help");
       const weaponNameNode = document.querySelector("#weapon-name");
@@ -369,8 +390,10 @@
       let health = 3;
       let maxHealth = 3;
       let moveSpeed = 205;
+      let roundSpeedBonus = 0;
       let pickupRadius = 25;
       let hitProtection = 1.2;
+      let roundHitProtectionBonus = 0;
       let chickenFleeFactor = 1;
       let zombieSpeedFactor = 1;
       let activeOffers = [];
@@ -382,6 +405,7 @@
       let joystickPointerId = null;
       const attackEffects = [];
       const zombieShots = [];
+      const goldenDrops = [];
       player.invulnerable = 0;
 
       const upgradeCatalog = [
@@ -398,6 +422,12 @@
         knife: { id: "knife", name: "Knife", range: 90, damage: 1, cooldown: .24, speedModifier: 25, magazine: Infinity, ammo: Infinity, reserve: Infinity, reloadTime: 0 },
         sniper: { id: "sniper", name: "Sniper", range: 420, damage: 2, cooldown: 1.05, speedModifier: -45, magazine: 5, ammo: 5, reserve: 20, reloadTime: 1.5 },
         ak47: { id: "ak47", name: "AK-47", range: 220, damage: 1, cooldown: .16, speedModifier: -20, magazine: 30, ammo: 30, reserve: 90, reloadTime: 1.25 }
+      };
+
+      const armorCatalog = {
+        bulwark: { apply: () => { maxHealth += 2; moveSpeed = Math.max(100, moveSpeed - 35); } },
+        scout: { apply: () => { moveSpeed += 30; maxHealth = Math.max(1, maxHealth - 1); health = Math.min(health, maxHealth); } },
+        guardian: { apply: () => { hitProtection += .6; moveSpeed = Math.max(100, moveSpeed - 15); } }
       };
 
       for (let i = 0; i < 145; i++) {
@@ -446,6 +476,44 @@
         bankCountNode.textContent = chickenBalance;
       }
 
+      function dropGoldenLoot(chicken) {
+        if (Math.random() < .5) {
+          goldenDrops.push({ x: chicken.x, y: chicken.y, kind: "coins", amount: 10 + Math.floor(Math.random() * 11) });
+          return;
+        }
+
+        const buffs = [
+          { icon: "+", apply: () => { roundSpeedBonus += 15; } },
+          { icon: "♥", apply: () => { health = Math.min(maxHealth, health + 1); } },
+          { icon: "✚", apply: () => { roundHitProtectionBonus += .25; } }
+        ];
+        const buff = buffs[Math.floor(Math.random() * buffs.length)];
+        goldenDrops.push({ x: chicken.x, y: chicken.y, kind: "buff", ...buff });
+      }
+
+      function respawnCollectibleChicken(chicken) {
+        chicken.golden = Math.random() < .05;
+        if (chicken.golden) {
+          chicken.health = 4;
+          chicken.maxHealth = 4;
+        } else {
+          delete chicken.health;
+          delete chicken.maxHealth;
+        }
+        placeChicken(chicken, true);
+      }
+
+      function defeatGoldenChicken(chicken) {
+        const index = chickens.indexOf(chicken);
+        if (index === -1) return;
+        score++;
+        chickenBalance += 5;
+        updateChickenBalance();
+        dropGoldenLoot(chicken);
+        respawnCollectibleChicken(chicken);
+        celebration = 1;
+      }
+
       function resetJoystick() {
         touchInput.x = 0;
         touchInput.y = 0;
@@ -490,7 +558,7 @@
         if (phase !== "playing" || player.invulnerable > 0) return false;
         health = Math.max(0, health - amount);
         healthNode.textContent = `${health} / ${maxHealth}`;
-        player.invulnerable = hitProtection;
+        player.invulnerable = hitProtection + roundHitProtectionBonus;
         if (health === 0) {
           phase = "gameover";
           startButton.hidden = false;
@@ -515,7 +583,7 @@
         let target = null;
         let nearestDistance = weapon.range;
         for (const chicken of chickens) {
-          if (!chicken.hostile) continue;
+          if (!chicken.hostile && !chicken.golden) continue;
           const distance = Math.hypot(chicken.x - player.x, chicken.y - player.y);
           if (distance <= nearestDistance) {
             target = chicken;
@@ -527,8 +595,12 @@
           target.health -= weapon.damage;
           attackEffects.push({ x1: player.x, y1: player.y, x2: target.x, y2: target.y, color: weapon.id === "knife" ? "#fff2a1" : "#ffe17a", time: .12 });
           if (target.health <= 0) {
-            chickens.splice(chickens.indexOf(target), 1);
-            if (target.hostile) pendingZombieRespawns.push({ timer: 10, zombie: { ...target } });
+            if (target.golden) {
+              defeatGoldenChicken(target);
+            } else {
+              chickens.splice(chickens.indexOf(target), 1);
+              if (target.hostile) pendingZombieRespawns.push({ timer: 10, zombie: { ...target } });
+            }
           }
         }
         updateWeaponReadout();
@@ -548,6 +620,14 @@
         startNextRound(false);
       }
 
+      function selectArmor(id) {
+        if (phase !== "armor" || !armorCatalog[id]) return;
+        armorCatalog[id].apply();
+        armorPanel.hidden = true;
+        healthNode.textContent = `${health} / ${maxHealth}`;
+        startNextRound();
+      }
+
       function startNextRound(countCompletedRound = true) {
         window.clearTimeout(autoAdvanceTimer);
         autoAdvanceTimer = null;
@@ -562,6 +642,7 @@
         round++;
         upgradePanel.hidden = true;
         weaponPanel.hidden = true;
+        armorPanel.hidden = true;
         beginRound();
       }
 
@@ -680,7 +761,7 @@
 
       function drawChicken(chicken) {
         const bob = Math.sin(chicken.flap) * 1.7;
-        const featherColor = chicken.hostile ? "#a3ae78" : "#fff8dc";
+        const featherColor = chicken.golden ? "#f2c94c" : chicken.hostile ? "#a3ae78" : "#fff8dc";
         ctx.save();
         ctx.translate(chicken.x, chicken.y + bob);
         if (chicken.boss) ctx.scale(1.8, 1.8);
@@ -707,27 +788,27 @@
         ctx.stroke();
         ctx.fillStyle = featherColor;
         ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = chicken.hostile ? "#778656" : "#ede0b8";
+        ctx.fillStyle = chicken.hostile ? "#778656" : chicken.golden ? "#d2a51f" : "#ede0b8";
         ctx.beginPath(); ctx.ellipse(-5, 1, 7, 5, -.3, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = featherColor;
         ctx.beginPath(); ctx.arc(10, -8, 8, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = chicken.hostile ? "#743f4b" : "#df6350";
+        ctx.fillStyle = chicken.hostile ? "#743f4b" : chicken.golden ? "#d89d20" : "#df6350";
         ctx.beginPath(); ctx.arc(7, -16, 3, 0, Math.PI * 2); ctx.arc(12, -17, 3, 0, Math.PI * 2); ctx.arc(16, -14, 3, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = chicken.hostile ? "#819052" : "#e5a63f";
+        ctx.fillStyle = chicken.hostile ? "#819052" : chicken.golden ? "#e7b52e" : "#e5a63f";
         ctx.beginPath(); ctx.moveTo(17, -8); ctx.lineTo(24, -5); ctx.lineTo(17, -3); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = chicken.hostile ? "#e2504a" : "#263b30";
+        ctx.fillStyle = chicken.hostile ? "#e2504a" : chicken.golden ? "#493a31" : "#263b30";
         ctx.beginPath(); ctx.arc(12, -10, chicken.hostile ? 2.2 : 1.5, 0, Math.PI * 2); ctx.fill();
-        if (chicken.hostile) {
+        if (chicken.hostile || chicken.golden) {
           const barWidth = chicken.boss ? 40 : 32;
           const healthRatio = Math.max(0, chicken.health / chicken.maxHealth);
           ctx.fillStyle = "#493a31";
           ctx.fillRect(-barWidth / 2, -30, barWidth, 4);
-          ctx.fillStyle = "#e2504a";
+          ctx.fillStyle = chicken.golden ? "#f2c94c" : "#e2504a";
           ctx.fillRect(-barWidth / 2, -30, barWidth * healthRatio, 4);
           ctx.fillStyle = "#fff9e4";
           ctx.font = "bold 9px Trebuchet MS, sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText(chicken.boss ? "BOSS" : "!", 0, -36);
+          ctx.fillText(chicken.golden ? "GOLD" : chicken.boss ? "BOSS" : "!", 0, -36);
         }
         if (chicken.gunner || chicken.boss) {
           ctx.save();
@@ -779,6 +860,19 @@
       function render() {
         drawScenery();
         for (const chicken of chickens) drawChicken(chicken);
+        for (const drop of goldenDrops) {
+          ctx.fillStyle = drop.kind === "coins" ? "#f2c94c" : "#63a958";
+          ctx.beginPath(); ctx.arc(drop.x, drop.y, 11, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = "#fff9e4";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = "#fff9e4";
+          ctx.font = "bold 12px Trebuchet MS, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(drop.kind === "coins" ? "$" : drop.icon, drop.x, drop.y);
+          ctx.textBaseline = "alphabetic";
+        }
         for (const shot of zombieShots) {
           ctx.fillStyle = shot.bossShot ? "#111111" : "#493a31";
           ctx.beginPath(); ctx.arc(shot.x, shot.y, shot.radius + 2, 0, Math.PI * 2); ctx.fill();
@@ -797,6 +891,7 @@
         if (phase === "ready") drawOverlay("Ready, ranch hand?", "START CHASING WHEN YOU'RE READY");
         if (phase === "upgrade") drawOverlay("Round complete!", "CHOOSE AN UPGRADE BELOW");
         if (phase === "weapon") drawOverlay("Pick your weapon!", "CHOOSE YOUR LOADOUT FOR ROUND 5");
+        if (phase === "armor") drawOverlay("Choose your armor!", "PICK YOUR ARMOR FOR ROUND 15");
         if (phase === "gameover") drawOverlay("Out of health!", `${score} chickens caught across ${round} rounds`);
         for (const effect of attackEffects) {
           ctx.strokeStyle = effect.color;
@@ -833,8 +928,9 @@
         const horizontal = (keys.has("ArrowRight") ? 1 : 0) - (keys.has("ArrowLeft") ? 1 : 0) + touchInput.x;
         const vertical = (keys.has("ArrowDown") ? 1 : 0) - (keys.has("ArrowUp") ? 1 : 0) + touchInput.y;
         const length = Math.hypot(horizontal, vertical) || 1;
-        player.x = Math.max(38, Math.min(width - 38, player.x + horizontal / length * moveSpeed * delta));
-        player.y = Math.max(42, Math.min(height - 42, player.y + vertical / length * moveSpeed * delta));
+        const playerMoveSpeed = moveSpeed + roundSpeedBonus;
+        player.x = Math.max(38, Math.min(width - 38, player.x + horizontal / length * playerMoveSpeed * delta));
+        player.y = Math.max(42, Math.min(height - 42, player.y + vertical / length * playerMoveSpeed * delta));
         if (horizontal) player.facing = Math.sign(horizontal);
 
         for (let i = pendingZombieRespawns.length - 1; i >= 0; i--) {
@@ -880,9 +976,9 @@
               }
             }
             const slowZombie = chicken.spiky || chicken.gunner || chicken.boss;
-            const baseSpeed = slowZombie ? 12 : Math.min(145, 75 + round * 8);
+            const baseSpeed = slowZombie ? playerMoveSpeed * .75 : Math.min(145, 75 + round * 8);
             const waveSpeed = baseSpeed * Math.pow(1.05, round - 1) * zombieSpeedFactor;
-            const playerSpeedCap = moveSpeed * (slowZombie ? .75 : .95);
+            const playerSpeedCap = playerMoveSpeed * (slowZombie ? .9 : .95);
             const speed = Math.min(waveSpeed, playerSpeedCap);
             chicken.x += Math.cos(chicken.direction) * speed * delta;
             chicken.y += Math.sin(chicken.direction) * speed * delta;
@@ -909,15 +1005,28 @@
             chicken.y -= Math.sin(chicken.direction) * 55;
             if (phase !== "playing") break;
           } else if (!chicken.hostile && distance < pickupRadius) {
-            score++;
-            chickenBalance++;
-            updateChickenBalance();
-            celebration = 1;
-            placeChicken(chicken, true);
+            if (chicken.golden) {
+              defeatGoldenChicken(chicken);
+            } else {
+              score++;
+              chickenBalance++;
+              updateChickenBalance();
+              celebration = 1;
+              respawnCollectibleChicken(chicken);
+            }
           }
         }
 
         if (phase !== "playing") return;
+        for (let i = goldenDrops.length - 1; i >= 0; i--) {
+          const drop = goldenDrops[i];
+          if (Math.hypot(drop.x - player.x, drop.y - player.y) >= pickupRadius + 11) continue;
+          if (drop.kind === "coins") chickenBalance += drop.amount;
+          else drop.apply();
+          goldenDrops.splice(i, 1);
+          updateChickenBalance();
+          healthNode.textContent = `${health} / ${maxHealth}`;
+        }
         for (let i = zombieShots.length - 1; i >= 0; i--) {
           const shot = zombieShots[i];
           shot.x += shot.vx * delta;
@@ -941,11 +1050,18 @@
             phase = "weapon";
             upgradePanel.hidden = true;
             weaponPanel.hidden = false;
+            armorPanel.hidden = true;
             updateWeaponReadout();
+          } else if (round === 14) {
+            phase = "armor";
+            upgradePanel.hidden = true;
+            weaponPanel.hidden = true;
+            armorPanel.hidden = false;
           } else {
             phase = "upgrade";
             upgradePanel.hidden = false;
             weaponPanel.hidden = true;
+            armorPanel.hidden = true;
             showUpgradeOffers();
           }
         }
@@ -964,6 +1080,8 @@
       function beginRound() {
         secondsLeft = roundDuration;
         elapsed = 0;
+        roundSpeedBonus = 0;
+        roundHitProtectionBonus = 0;
         timeNode.textContent = String(roundDuration);
         roundNode.textContent = round;
         player.x = width * .49;
@@ -972,6 +1090,7 @@
         healthNode.textContent = `${health} / ${maxHealth}`;
         player.invulnerable = 1;
         chickens.length = 0;
+        goldenDrops.length = 0;
         pendingZombieRespawns.length = 0;
         zombieShots.length = 0;
         for (let i = 0; i < 3 + bonusChickenCount; i++) {
@@ -1032,6 +1151,8 @@
         updateChickenBalance();
         healthNode.textContent = "3 / 3";
         upgradePanel.hidden = true;
+        weaponPanel.hidden = true;
+        armorPanel.hidden = true;
         beginRound();
       }
 
@@ -1055,6 +1176,10 @@
       weaponPanel.addEventListener("click", event => {
         const button = event.target.closest("[data-weapon]");
         if (button) selectWeapon(button.dataset.weapon);
+      });
+      armorPanel.addEventListener("click", event => {
+        const button = event.target.closest("[data-armor]");
+        if (button) selectArmor(button.dataset.armor);
       });
       attackButton.addEventListener("pointerdown", event => {
         event.preventDefault();
