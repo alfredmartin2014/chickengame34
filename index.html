@@ -976,7 +976,7 @@
               }
             }
             const slowZombie = chicken.spiky || chicken.gunner || chicken.boss;
-            const baseSpeed = slowZombie ? playerMoveSpeed * .75 : Math.min(145, 75 + round * 8);
+            const baseSpeed = slowZombie ? playerMoveSpeed * .6 : Math.min(145, 75 + round * 8);
             const waveSpeed = baseSpeed * Math.pow(1.05, round - 1) * zombieSpeedFactor;
             const playerSpeedCap = playerMoveSpeed * (slowZombie ? .9 : .95);
             const speed = Math.min(waveSpeed, playerSpeedCap);
