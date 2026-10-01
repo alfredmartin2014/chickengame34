@@ -354,6 +354,7 @@
       const keys = new Set();
       const grassMarks = [];
       const chickens = [];
+      const pendingZombieRespawns = [];
       const touchInput = { x: 0, y: 0 };
       const player = { x: width * .49, y: height * .54, facing: 1 };
       let secondsLeft = roundDuration;
@@ -364,6 +365,7 @@
       let round = 1;
       let score = 0;
       let chickenBalance = 0;
+      let bonusChickenCount = 0;
       let health = 3;
       let maxHealth = 3;
       let moveSpeed = 205;
@@ -376,6 +378,7 @@
       let weapon = null;
       let weaponCooldown = 0;
       let reloadTimer = 0;
+      let weaponRoundsPlayed = 0;
       let joystickPointerId = null;
       const attackEffects = [];
       const zombieShots = [];
@@ -387,7 +390,8 @@
         { id: "health", icon: "💚", name: "Extra heart", description: "+1 max health", price: 8, apply: () => { maxHealth++; } },
         { id: "protection", icon: "🧥", name: "Padded jacket", description: "+0.35 seconds protection after a hit", price: 8, apply: () => { hitProtection += .35; } },
         { id: "corn", icon: "🌽", name: "Pocket corn", description: "Chickens run 15% slower", price: 4, apply: () => { chickenFleeFactor *= .85; } },
-        { id: "repellent", icon: "🧴", name: "Zombie repellent", description: "Zombie chickens move 18% slower", price: 8, apply: () => { zombieSpeedFactor *= .82; } }
+        { id: "repellent", icon: "🧴", name: "Zombie repellent", description: "Zombie chickens move 18% slower", price: 8, apply: () => { zombieSpeedFactor *= .82; } },
+        { id: "extra-chicken", icon: "🐣", name: "Extra chicken", description: "+1 collectible chicken each round", price: 50, apply: () => { bonusChickenCount++; } }
       ];
 
       const weaponCatalog = {
@@ -416,6 +420,25 @@
         chicken.direction = Math.random() * Math.PI * 2;
         chicken.wander = .5 + Math.random() * 1.5;
         chicken.flap = Math.random() * 6;
+      }
+
+      function placeChickenOffscreen(chicken) {
+        placeChicken(chicken);
+        const edge = Math.floor(Math.random() * 4);
+        if (edge === 0) {
+          chicken.x = -45;
+          chicken.y = 55 + Math.random() * (height - 110);
+        } else if (edge === 1) {
+          chicken.x = width + 45;
+          chicken.y = 55 + Math.random() * (height - 110);
+        } else if (edge === 2) {
+          chicken.x = 55 + Math.random() * (width - 110);
+          chicken.y = -45;
+        } else {
+          chicken.x = 55 + Math.random() * (width - 110);
+          chicken.y = height + 45;
+        }
+        chicken.enteringFromOffscreen = true;
       }
 
       function updateChickenBalance() {
@@ -503,7 +526,10 @@
         if (target) {
           target.health -= weapon.damage;
           attackEffects.push({ x1: player.x, y1: player.y, x2: target.x, y2: target.y, color: weapon.id === "knife" ? "#fff2a1" : "#ffe17a", time: .12 });
-          if (target.health <= 0) chickens.splice(chickens.indexOf(target), 1);
+          if (target.health <= 0) {
+            chickens.splice(chickens.indexOf(target), 1);
+            if (target.hostile) pendingZombieRespawns.push({ timer: 10, zombie: { ...target } });
+          }
         }
         updateWeaponReadout();
       }
@@ -514,16 +540,25 @@
         moveSpeed = Math.max(100, moveSpeed + weapon.speedModifier);
         weaponCooldown = 0;
         reloadTimer = 0;
+        weaponRoundsPlayed = 0;
         weaponPanel.hidden = true;
         weaponControls.hidden = false;
         weaponHelp.hidden = false;
         updateWeaponReadout();
-        startNextRound();
+        startNextRound(false);
       }
 
-      function startNextRound() {
+      function startNextRound(countCompletedRound = true) {
         window.clearTimeout(autoAdvanceTimer);
         autoAdvanceTimer = null;
+        if (weapon && weapon.magazine !== Infinity && countCompletedRound) {
+          weaponRoundsPlayed++;
+          if (weaponRoundsPlayed >= 3) {
+            weapon.ammo = weapon.magazine;
+            weapon.reserve = weaponCatalog[weapon.id].reserve;
+            weaponRoundsPlayed = 0;
+          }
+        }
         round++;
         upgradePanel.hidden = true;
         weaponPanel.hidden = true;
@@ -531,7 +566,7 @@
       }
 
       function getUpgradePrice(offer) {
-        return Math.ceil(offer.price * Math.pow(1.05, round));
+        return Math.ceil(offer.price * Math.pow(1.1, round));
       }
 
       function showUpgradeOffers() {
@@ -694,7 +729,7 @@
           ctx.textAlign = "center";
           ctx.fillText(chicken.boss ? "BOSS" : "!", 0, -36);
         }
-        if (chicken.gunner) {
+        if (chicken.gunner || chicken.boss) {
           ctx.save();
           ctx.rotate(chicken.aimAngle || 0);
           ctx.fillStyle = "#59483a";
@@ -745,9 +780,9 @@
         drawScenery();
         for (const chicken of chickens) drawChicken(chicken);
         for (const shot of zombieShots) {
-          ctx.fillStyle = "#493a31";
+          ctx.fillStyle = shot.bossShot ? "#111111" : "#493a31";
           ctx.beginPath(); ctx.arc(shot.x, shot.y, shot.radius + 2, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = "#f2c965";
+          ctx.fillStyle = shot.bossShot ? "#e32636" : "#f2c965";
           ctx.beginPath(); ctx.arc(shot.x, shot.y, shot.radius, 0, Math.PI * 2); ctx.fill();
         }
         if (phase === "playing" && pickupRadius > 25) {
@@ -802,6 +837,22 @@
         player.y = Math.max(42, Math.min(height - 42, player.y + vertical / length * moveSpeed * delta));
         if (horizontal) player.facing = Math.sign(horizontal);
 
+        for (let i = pendingZombieRespawns.length - 1; i >= 0; i--) {
+          const respawn = pendingZombieRespawns[i];
+          respawn.timer -= delta;
+          if (respawn.timer <= 0) {
+            const zombie = {
+              ...respawn.zombie,
+              health: respawn.zombie.maxHealth,
+              shootCooldown: .8 + Math.random() * 1.2
+            };
+            if (zombie.boss) placeChickenOffscreen(zombie);
+            else placeChicken(zombie, true);
+            chickens.push(zombie);
+            pendingZombieRespawns.splice(i, 1);
+          }
+        }
+
         for (const chicken of chickens) {
           chicken.flap += delta * 9;
           const dx = chicken.x - player.x;
@@ -810,23 +861,29 @@
           if (chicken.hostile) {
             chicken.direction = Math.atan2(-dy, -dx) + Math.sin(elapsed * 4 + chicken.flap) * .2;
             chicken.aimAngle = Math.atan2(-dy, -dx);
-            if (chicken.gunner) {
+            if (chicken.gunner || chicken.boss) {
               chicken.shootCooldown -= delta;
               if (chicken.shootCooldown <= 0) {
                 const shotAngle = Math.atan2(player.y - chicken.y, player.x - chicken.x);
+                const bossShot = Boolean(chicken.boss);
+                const shotSpeed = bossShot ? 72 : 145;
                 zombieShots.push({
                   x: chicken.x + Math.cos(shotAngle) * 20,
                   y: chicken.y + Math.sin(shotAngle) * 20,
-                  vx: Math.cos(shotAngle) * 145,
-                  vy: Math.sin(shotAngle) * 145,
+                  vx: Math.cos(shotAngle) * shotSpeed,
+                  vy: Math.sin(shotAngle) * shotSpeed,
                   radius: 6,
-                  life: 6
+                  life: bossShot ? 18 : 6,
+                  bossShot
                 });
-                chicken.shootCooldown = 2.1;
+                chicken.shootCooldown = bossShot ? 3.2 : 2.1;
               }
             }
-            const waveSpeed = Math.min(145, 75 + round * 8) * Math.pow(1.05, round - 1) * zombieSpeedFactor;
-            const speed = Math.min(waveSpeed, moveSpeed * .95, chicken.spiky ? 12 : chicken.gunner ? 28 : Infinity);
+            const slowZombie = chicken.spiky || chicken.gunner || chicken.boss;
+            const baseSpeed = slowZombie ? 12 : Math.min(145, 75 + round * 8);
+            const waveSpeed = baseSpeed * Math.pow(1.05, round - 1) * zombieSpeedFactor;
+            const playerSpeedCap = moveSpeed * (slowZombie ? .75 : .95);
+            const speed = Math.min(waveSpeed, playerSpeedCap);
             chicken.x += Math.cos(chicken.direction) * speed * delta;
             chicken.y += Math.sin(chicken.direction) * speed * delta;
           } else if (distance < 145) {
@@ -839,8 +896,13 @@
             chicken.x += Math.cos(chicken.direction) * 28 * delta;
             chicken.y += Math.sin(chicken.direction) * 28 * delta;
           }
-          chicken.x = Math.max(39, Math.min(width - 39, chicken.x));
-          chicken.y = Math.max(43, Math.min(height - 43, chicken.y));
+          if (chicken.enteringFromOffscreen && chicken.x >= 39 && chicken.x <= width - 39 && chicken.y >= 43 && chicken.y <= height - 43) {
+            chicken.enteringFromOffscreen = false;
+          }
+          if (!chicken.enteringFromOffscreen) {
+            chicken.x = Math.max(39, Math.min(width - 39, chicken.x));
+            chicken.y = Math.max(43, Math.min(height - 43, chicken.y));
+          }
           if (chicken.hostile && distance < (chicken.boss ? 42 : 28) && player.invulnerable <= 0) {
             damagePlayer(chicken.spiky ? 2 : 1);
             chicken.x -= Math.cos(chicken.direction) * 55;
@@ -865,7 +927,7 @@
             zombieShots.splice(i, 1);
           } else if (Math.hypot(shot.x - player.x, shot.y - player.y) < shot.radius + 11) {
             zombieShots.splice(i, 1);
-            damagePlayer();
+            damagePlayer(shot.bossShot ? health : 3);
             if (phase !== "playing") return;
           }
         }
@@ -910,8 +972,9 @@
         healthNode.textContent = `${health} / ${maxHealth}`;
         player.invulnerable = 1;
         chickens.length = 0;
+        pendingZombieRespawns.length = 0;
         zombieShots.length = 0;
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 3 + bonusChickenCount; i++) {
           const chicken = { hostile: false };
           placeChicken(chicken, true);
           chickens.push(chicken);
@@ -926,15 +989,16 @@
             health: chickenHealth,
             maxHealth: chickenHealth,
             spiky: isSpiky,
-            gunner: round >= 11,
+            gunner: round >= 10 && Math.random() < .33,
             shootCooldown: .8 + Math.random() * 1.2
           };
           placeChicken(chicken, true);
           chickens.push(chicken);
         }
-        if (round === 10) {
-          const boss = { hostile: true, boss: true, health: 30, maxHealth: 30 };
-          placeChicken(boss, true);
+        if (round % 10 === 0) {
+          const bossHealth = 30 * Math.pow(1.05, round - 10);
+          const boss = { hostile: true, boss: true, health: bossHealth, maxHealth: bossHealth, shootCooldown: .8 + Math.random() * 1.2 };
+          placeChickenOffscreen(boss);
           chickens.push(boss);
         }
         phase = "playing";
@@ -948,6 +1012,7 @@
         autoAdvanceTimer = null;
         score = 0;
         chickenBalance = 0;
+        bonusChickenCount = 0;
         round = 1;
         health = 3;
         maxHealth = 3;
@@ -960,6 +1025,7 @@
         weapon = null;
         weaponCooldown = 0;
         reloadTimer = 0;
+        weaponRoundsPlayed = 0;
         attackEffects.length = 0;
         weaponControls.hidden = true;
         weaponHelp.hidden = true;
