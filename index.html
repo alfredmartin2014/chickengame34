@@ -497,7 +497,6 @@
       const player = { x: width * .49, y: height * .54, facing: 1 };
       let secondsLeft = roundDuration;
       let phase = "ready";
-      let pausedPhase = null;
       let countdownRemaining = 0;
       let audioContext = null;
       let soundEnabled = true;
@@ -636,10 +635,9 @@
 
       function togglePause() {
         if (phase === "paused") {
-          phase = pausedPhase || "playing";
-          pausedPhase = null;
+          countdownRemaining = 5;
+          phase = "countdown";
         } else if (phase === "playing" || phase === "countdown") {
-          pausedPhase = phase;
           phase = "paused";
           keys.clear();
           resetJoystick();
@@ -1374,7 +1372,6 @@
           chickens.push(boss);
         }
         countdownRemaining = 5;
-        pausedPhase = null;
         phase = "countdown";
         syncPauseButton();
         startButton.hidden = Boolean(weapon);
