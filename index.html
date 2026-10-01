@@ -145,6 +145,7 @@
     .active-effect { font-size: 10px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
     .active-effect-buff { color: var(--green); }
     .active-effect-debuff { color: #b65b42; }
+    .dodge-counter { position: absolute; z-index: 3; right: 10px; bottom: 10px; display: flex; min-width: 58px; height: 38px; align-items: center; justify-content: center; gap: 7px; padding: 0 10px; border: 1px solid rgba(32, 59, 45, .55); border-radius: 6px; color: #fffdf5; background: rgba(32, 59, 45, .86); font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; }
 
     .game-shell:fullscreen {
       display: flex;
@@ -219,6 +220,7 @@
     .upgrade-heading h2 { margin: 0; font: 700 19px Georgia, serif; }
     .upgrade-heading > p { margin: 0; color: var(--muted); font-size: 11px; font-weight: 700; }
     .upgrade-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+    .upgrade-option { display: grid; min-width: 0; gap: 4px; }
 
     .upgrade-card {
       display: flex;
@@ -248,6 +250,10 @@
     .weapon-debuff { color: #b65b42 !important; font-weight: 800; }
     .upgrade-card:disabled { color: #849085; background: #ecebdd; cursor: not-allowed; opacity: .72; }
     .upgrade-card:disabled:hover { border-color: rgba(32, 59, 45, .2); box-shadow: none; transform: none; }
+    .upgrade-lock-button { min-height: 28px; border: 1px solid rgba(32, 59, 45, .25); border-radius: 5px; color: var(--muted); background: #fffdf5; font: inherit; font-size: 10px; font-weight: 800; cursor: pointer; }
+    .upgrade-lock-button[aria-pressed="true"] { border-color: var(--green); color: var(--green); background: #e7edcc; }
+    .upgrade-lock-button:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+    .upgrade-lock-button:disabled { cursor: not-allowed; opacity: .55; }
     .upgrade-note { margin: 9px 0 0; color: var(--muted); font-size: 10px; font-weight: 700; }
     .upgrade-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 8px; }
     .weapon-controls { display: flex; align-items: center; gap: 7px; }
@@ -368,6 +374,7 @@
           <p class="active-effects-heading">BUFFS &amp; DEBUFFS</p>
           <ul class="active-effects-list" id="active-effects-list"></ul>
         </aside>
+        <div class="dodge-counter" title="Dodge charges remaining" aria-label="Dodge charges remaining" aria-live="polite"><span aria-hidden="true">🛡</span><span id="dodge-count">0</span></div>
         <div class="touch-joystick" id="touch-joystick" hidden>
           <div class="joystick-ring" id="joystick-ring" role="application" aria-label="Movement joystick"><div class="joystick-knob" id="joystick-knob"></div></div>
         </div>
@@ -463,6 +470,7 @@
       const fullscreenButton = document.querySelector("#fullscreen-button");
       const pauseButton = document.querySelector("#pause-button");
       const restartButton = document.querySelector("#restart-button");
+      const dodgeCountNode = document.querySelector("#dodge-count");
       const soundEnabledInput = document.querySelector("#sound-enabled");
       const soundVolumeInput = document.querySelector("#sound-volume");
       const soundVolumeValue = document.querySelector("#sound-volume-value");
@@ -491,6 +499,18 @@
       const roundDuration = 45;
       const keys = new Set();
       const grassMarks = [];
+      const farmObstacleTypes = [
+        { width: 110, height: 76, type: "hay" },
+        { width: 100, height: 64, type: "trough" },
+        { width: 94, height: 82, type: "crate" },
+        { width: 150, height: 54, type: "fence" }
+      ];
+      const farmObstacleSpots = [
+        { x: 90, y: 65 }, { x: 400, y: 70 }, { x: 730, y: 65 },
+        { x: 70, y: 235 }, { x: 780, y: 235 },
+        { x: 95, y: 400 }, { x: 420, y: 415 }, { x: 740, y: 400 }
+      ];
+      let farmObstacles = [];
       const chickens = [];
       const pendingZombieRespawns = [];
       const touchInput = { x: 0, y: 0 };
@@ -508,8 +528,11 @@
       let score = 0;
       let chickenBalance = 0;
       let bonusChickenCount = 0;
+      let dodgesPerRound = 0;
+      let dodgeCharges = 0;
       let health = 3;
       let maxHealth = 3;
+      let roundMaxHealthBonus = 0;
       let moveSpeed = 205;
       let roundSpeedBonus = 0;
       let pickupRadius = 25;
@@ -518,6 +541,7 @@
       let chickenFleeFactor = 1;
       let zombieSpeedFactor = 1;
       let activeOffers = [];
+      const lockedOfferIds = new Set();
       const purchasedOfferIds = new Set();
       let rerollCount = 0;
       let autoAdvanceTimer = null;
@@ -539,7 +563,8 @@
         { id: "protection", icon: "🧥", name: "Padded jacket", description: "+0.35 seconds protection after a hit", price: 8, apply: () => { hitProtection += .35; addActiveEffect("upgrade-protection", "buff", "Padded jacket: +0.35s protection"); } },
         { id: "corn", icon: "🌽", name: "Pocket corn", description: "Chickens run 15% slower", price: 4, apply: () => { chickenFleeFactor *= .85; addActiveEffect("upgrade-corn", "buff", "Pocket corn: chickens 15% slower"); } },
         { id: "repellent", icon: "🧴", name: "Zombie repellent", description: "Zombie chickens move 18% slower", price: 8, apply: () => { zombieSpeedFactor *= .82; addActiveEffect("upgrade-repellent", "buff", "Repellent: zombies 18% slower"); } },
-        { id: "extra-chicken", icon: "🐣", name: "Extra chicken", description: "+1 collectible chicken each round", price: 50, apply: () => { bonusChickenCount++; addActiveEffect("upgrade-chicken", "buff", "Extra chicken: +1 each round"); } }
+        { id: "extra-chicken", icon: "🐣", name: "Extra chicken", description: "+1 collectible chicken each round", price: 50, apply: () => { bonusChickenCount++; addActiveEffect("upgrade-chicken", "buff", "Extra chicken: +1 each round"); } },
+        { id: "dodge", icon: "🛡️", name: "Dodge Training", description: "+1 charge each round to null an incoming attack", price: 30, apply: () => { dodgesPerRound++; addActiveEffect("upgrade-dodge", "buff", "Dodge Training: +1 charge each round"); } }
       ];
 
       const weaponCatalog = {
@@ -564,16 +589,57 @@
       }
 
       function placeChicken(chicken, firstSpawn = false) {
+        const radius = chicken.boss ? 32 : chicken.spiky ? 24 : chicken.golden ? 18 : 16;
         let x, y;
         do {
           x = 55 + Math.random() * (width - 110);
           y = 55 + Math.random() * (height - 110);
-        } while (firstSpawn && Math.hypot(x - player.x, y - player.y) < 180);
+        } while ((firstSpawn && Math.hypot(x - player.x, y - player.y) < 180) || collidesWithFarmObstacle(x, y, radius));
         chicken.x = x;
         chicken.y = y;
         chicken.direction = Math.random() * Math.PI * 2;
         chicken.wander = .5 + Math.random() * 1.5;
         chicken.flap = Math.random() * 6;
+      }
+
+      function collidesWithFarmObstacle(x, y, radius) {
+        if (round <= 10) return false;
+        return farmObstacles.some(obstacle => {
+          const nearestX = Math.max(obstacle.x, Math.min(x, obstacle.x + obstacle.width));
+          const nearestY = Math.max(obstacle.y, Math.min(y, obstacle.y + obstacle.height));
+          return Math.hypot(x - nearestX, y - nearestY) < radius;
+        });
+      }
+
+      function createFarmObstacleLayout() {
+        const spots = [...farmObstacleSpots];
+        for (let i = spots.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [spots[i], spots[j]] = [spots[j], spots[i]];
+        }
+        const count = 3 + Math.floor(Math.random() * 4);
+        return spots.slice(0, count).map(spot => {
+          const template = farmObstacleTypes[Math.floor(Math.random() * farmObstacleTypes.length)];
+          return {
+            ...template,
+            x: Math.max(45, Math.min(width - template.width - 45, spot.x + Math.random() * 36 - 18)),
+            y: Math.max(45, Math.min(height - template.height - 45, spot.y + Math.random() * 36 - 18))
+          };
+        });
+      }
+
+      function resolveChickenObstacleCollision(chicken, previousX, previousY, radius) {
+        if (!collidesWithFarmObstacle(chicken.x, chicken.y, radius)) return;
+        const attemptedX = chicken.x;
+        const attemptedY = chicken.y;
+        chicken.x = attemptedX;
+        chicken.y = previousY;
+        if (!collidesWithFarmObstacle(chicken.x, chicken.y, radius)) return;
+        chicken.x = previousX;
+        chicken.y = attemptedY;
+        if (!collidesWithFarmObstacle(chicken.x, chicken.y, radius)) return;
+        chicken.x = previousX;
+        chicken.y = previousY;
       }
 
       function placeChickenOffscreen(chicken) {
@@ -598,6 +664,10 @@
       function updateChickenBalance() {
         scoreNode.textContent = chickenBalance;
         bankCountNode.textContent = chickenBalance;
+      }
+
+      function updateHealthReadout() {
+        healthNode.textContent = `${health} / ${maxHealth + roundMaxHealthBonus}`;
       }
 
       function initializeAudio() {
@@ -673,15 +743,26 @@
         renderActiveEffects();
       }
 
+      function updateDodgeStatus() {
+        dodgeCountNode.textContent = dodgeCharges;
+        if (dodgeCharges > 0) activeEffects.set("round-dodge", { kind: "buff", label: `Dodge charges: ${dodgeCharges} this round`, count: 1 });
+        else activeEffects.delete("round-dodge");
+        renderActiveEffects();
+      }
+
+      function scaleGoldenCoins(amount) {
+        return Math.round(amount * Math.pow(1.025, round - 1));
+      }
+
       function dropGoldenLoot(chicken) {
         if (Math.random() < .5) {
-          goldenDrops.push({ x: chicken.x, y: chicken.y, kind: "coins", amount: 5 + Math.floor(Math.random() * 6) });
+          goldenDrops.push({ x: chicken.x, y: chicken.y, kind: "coins", amount: scaleGoldenCoins(5 + Math.floor(Math.random() * 6)) });
           return;
         }
 
         const buffs = [
           { icon: "+", apply: () => { roundSpeedBonus += 15; addActiveEffect("round-speed", "buff", "Gold boost: +15 speed this round"); } },
-          { icon: "♥", apply: () => { health = Math.min(maxHealth, health + 1); addActiveEffect("round-heart", "buff", "Gold heart: +1 health this round"); } },
+          { icon: "♥", apply: () => { roundMaxHealthBonus++; health = Math.min(maxHealth + roundMaxHealthBonus, health + 1); addActiveEffect("round-heart", "buff", "Gold heart: +1 current and max health this round"); } },
           { icon: "✚", apply: () => { roundHitProtectionBonus += .25; addActiveEffect("round-protection", "buff", "Gold guard: +0.25s protection this round"); } }
         ];
         const buff = buffs[Math.floor(Math.random() * buffs.length)];
@@ -704,7 +785,7 @@
         const index = chickens.indexOf(chicken);
         if (index === -1) return;
         score++;
-        chickenBalance += 5;
+        chickenBalance += scaleGoldenCoins(5);
         updateChickenBalance();
         dropGoldenLoot(chicken);
         respawnCollectibleChicken(chicken);
@@ -754,9 +835,15 @@
 
       function damagePlayer(amount = 1) {
         if (phase !== "playing" || player.invulnerable > 0) return false;
+        if (dodgeCharges > 0) {
+          dodgeCharges--;
+          updateDodgeStatus();
+          playTone(760, .14, "triangle");
+          return false;
+        }
         playTone(145, .2, "sawtooth");
         health = Math.max(0, health - amount);
-        healthNode.textContent = `${health} / ${maxHealth}`;
+        updateHealthReadout();
         player.invulnerable = hitProtection + roundHitProtectionBonus;
         if (health === 0) {
           phase = "gameover";
@@ -829,7 +916,7 @@
         addActiveEffect("armor-perk", "buff", `Armor: ${armor.perk}`);
         addActiveEffect("armor-debuff", "debuff", `Armor: ${armor.debuff}`);
         armorPanel.hidden = true;
-        healthNode.textContent = `${health} / ${maxHealth}`;
+        updateHealthReadout();
         startNextRound();
       }
 
@@ -861,15 +948,24 @@
 
       function refreshUpgradeAvailability() {
         let affordableCount = 0;
-        for (const button of upgradeGridNode.querySelectorAll("[data-upgrade]")) {
+        for (const option of upgradeGridNode.querySelectorAll(".upgrade-option")) {
+          const button = option.querySelector("[data-upgrade]");
+          const lockButton = option.querySelector("[data-lock-upgrade]");
           const offer = activeOffers.find(item => item.id === button.dataset.upgrade);
           button.disabled = !offer || purchasedOfferIds.has(offer.id) || chickenBalance < getUpgradePrice(offer);
+          const locked = Boolean(offer && lockedOfferIds.has(offer.id));
+          lockButton.disabled = !offer || purchasedOfferIds.has(offer.id);
+          lockButton.setAttribute("aria-pressed", String(locked));
+          lockButton.textContent = locked ? "🔒 Locked" : "Lock offer";
           if (!button.disabled) affordableCount++;
         }
         const rerollCost = getUpgradeRerollCost();
-        rerollUpgradesButton.disabled = chickenBalance < rerollCost;
+        const allOffersLocked = activeOffers.length > 0 && activeOffers.every(offer => lockedOfferIds.has(offer.id));
+        rerollUpgradesButton.disabled = chickenBalance < rerollCost || allOffersLocked;
         rerollUpgradesButton.textContent = `Reroll (${rerollCost} eggs)`;
-        upgradeNoteNode.textContent = affordableCount > 0
+        upgradeNoteNode.textContent = allOffersLocked
+          ? "Unlock an offer before rerolling."
+          : affordableCount > 0
           ? "Buy any affordable upgrades, then continue."
           : "No more affordable upgrades. Continue when ready.";
       }
@@ -881,16 +977,28 @@
           const j = Math.floor(Math.random() * (i + 1));
           [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-        activeOffers = shuffled.slice(0, 3);
+        const lockedOffers = [...lockedOfferIds]
+          .map(id => upgradeCatalog.find(offer => offer.id === id))
+          .filter(Boolean);
+        const lockedIds = new Set(lockedOffers.map(offer => offer.id));
+        const newOffers = shuffled.filter(offer => !lockedIds.has(offer.id));
+        activeOffers = [...lockedOffers, ...newOffers.slice(0, 3 - lockedOffers.length)];
+        if (round === 1 && chickenBalance > 8 && !activeOffers.some(offer => chickenBalance >= getUpgradePrice(offer))) {
+          const affordableOffer = upgradeCatalog.find(offer => !lockedIds.has(offer.id) && chickenBalance >= getUpgradePrice(offer));
+          const replaceIndex = activeOffers.findIndex(offer => !lockedOfferIds.has(offer.id));
+          if (affordableOffer && replaceIndex >= 0) activeOffers[replaceIndex] = affordableOffer;
+        }
         upgradeGridNode.replaceChildren();
 
         for (const offer of activeOffers) {
           const priceAmount = getUpgradePrice(offer);
+          const option = document.createElement("div");
+          option.className = "upgrade-option";
           const button = document.createElement("button");
           button.className = "upgrade-card";
           button.type = "button";
           button.dataset.upgrade = offer.id;
-          button.disabled = chickenBalance < priceAmount;
+          button.disabled = purchasedOfferIds.has(offer.id) || chickenBalance < priceAmount;
 
           const icon = document.createElement("span");
           icon.className = "upgrade-icon";
@@ -907,7 +1015,13 @@
           price.textContent = `${priceAmount} ${priceAmount === 1 ? "chicken" : "chickens"}`;
           copy.append(name, description, price);
           button.append(icon, copy);
-          upgradeGridNode.append(button);
+          const lockButton = document.createElement("button");
+          lockButton.className = "upgrade-lock-button";
+          lockButton.type = "button";
+          lockButton.dataset.lockUpgrade = offer.id;
+          lockButton.setAttribute("aria-label", `Lock ${offer.name} in the upgrade list`);
+          option.append(button, lockButton);
+          upgradeGridNode.append(option);
         }
 
         refreshUpgradeAvailability();
@@ -987,6 +1101,61 @@
           ctx.beginPath(); ctx.moveTo(x, y + 12); ctx.lineTo(x + 3, y); ctx.stroke();
         }
         drawFence();
+      }
+
+      function drawFarmObstacles() {
+        if (round <= 10) return;
+        for (const obstacle of farmObstacles) {
+          ctx.save();
+          if (obstacle.type === "hay") {
+            ctx.fillStyle = "#d5a64e";
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            ctx.strokeStyle = "#8a6230";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(obstacle.x + 2, obstacle.y + 2, obstacle.width - 4, obstacle.height - 4);
+            ctx.strokeStyle = "#f2d48b";
+            ctx.lineWidth = 2;
+            for (let x = obstacle.x + 14; x < obstacle.x + obstacle.width; x += 22) {
+              ctx.beginPath(); ctx.moveTo(x, obstacle.y + 5); ctx.lineTo(x - 7, obstacle.y + obstacle.height - 5); ctx.stroke();
+            }
+            ctx.strokeStyle = "#81572a";
+            ctx.beginPath();
+            ctx.moveTo(obstacle.x + 5, obstacle.y + obstacle.height / 2); ctx.lineTo(obstacle.x + obstacle.width - 5, obstacle.y + obstacle.height / 2);
+            ctx.stroke();
+          } else if (obstacle.type === "trough") {
+            ctx.fillStyle = "#74543b";
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            ctx.fillStyle = "#718f80";
+            ctx.fillRect(obstacle.x + 8, obstacle.y + 8, obstacle.width - 16, obstacle.height - 16);
+            ctx.fillStyle = "#9bb7a4";
+            ctx.fillRect(obstacle.x + 12, obstacle.y + 12, obstacle.width - 24, 7);
+            ctx.strokeStyle = "#423d32";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+          } else if (obstacle.type === "crate") {
+            ctx.fillStyle = "#a66d3b";
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            ctx.strokeStyle = "#60452f";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(obstacle.x + 2, obstacle.y + 2, obstacle.width - 4, obstacle.height - 4);
+            ctx.beginPath();
+            ctx.moveTo(obstacle.x + 6, obstacle.y + 6); ctx.lineTo(obstacle.x + obstacle.width - 6, obstacle.y + obstacle.height - 6);
+            ctx.moveTo(obstacle.x + obstacle.width - 6, obstacle.y + 6); ctx.lineTo(obstacle.x + 6, obstacle.y + obstacle.height - 6);
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = "#8c673d";
+            ctx.fillRect(obstacle.x, obstacle.y + 8, obstacle.width, 12);
+            ctx.fillRect(obstacle.x, obstacle.y + obstacle.height - 20, obstacle.width, 12);
+            for (let x = obstacle.x + 8; x < obstacle.x + obstacle.width; x += 34) {
+              ctx.fillRect(x, obstacle.y, 10, obstacle.height);
+            }
+            ctx.strokeStyle = "#5d4932";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(obstacle.x, obstacle.y + 8, obstacle.width, 12);
+            ctx.strokeRect(obstacle.x, obstacle.y + obstacle.height - 20, obstacle.width, 12);
+          }
+          ctx.restore();
+        }
       }
 
       function drawChicken(chicken) {
@@ -1089,6 +1258,7 @@
 
       function render() {
         drawScenery();
+        drawFarmObstacles();
         for (const chicken of chickens) drawChicken(chicken);
         for (const drop of goldenDrops) {
           ctx.fillStyle = drop.kind === "coins" ? "#f2c94c" : "#63a958";
@@ -1161,8 +1331,10 @@
         const vertical = (keys.has("ArrowDown") ? 1 : 0) - (keys.has("ArrowUp") ? 1 : 0) + touchInput.y;
         const length = Math.hypot(horizontal, vertical) || 1;
         const playerMoveSpeed = moveSpeed + roundSpeedBonus;
-        player.x = Math.max(38, Math.min(width - 38, player.x + horizontal / length * playerMoveSpeed * delta));
-        player.y = Math.max(42, Math.min(height - 42, player.y + vertical / length * playerMoveSpeed * delta));
+        const nextPlayerX = Math.max(38, Math.min(width - 38, player.x + horizontal / length * playerMoveSpeed * delta));
+        if (!collidesWithFarmObstacle(nextPlayerX, player.y, 18)) player.x = nextPlayerX;
+        const nextPlayerY = Math.max(42, Math.min(height - 42, player.y + vertical / length * playerMoveSpeed * delta));
+        if (!collidesWithFarmObstacle(player.x, nextPlayerY, 18)) player.y = nextPlayerY;
         if (horizontal) player.facing = Math.sign(horizontal);
 
         for (let i = pendingZombieRespawns.length - 1; i >= 0; i--) {
@@ -1182,6 +1354,8 @@
         }
 
         for (const chicken of chickens) {
+          const previousX = chicken.x;
+          const previousY = chicken.y;
           chicken.flap += delta * 9;
           const dx = chicken.x - player.x;
           const dy = chicken.y - player.y;
@@ -1231,6 +1405,8 @@
             chicken.x = Math.max(39, Math.min(width - 39, chicken.x));
             chicken.y = Math.max(43, Math.min(height - 43, chicken.y));
           }
+          const collisionRadius = chicken.boss ? 32 : chicken.spiky ? 24 : chicken.golden ? 18 : 16;
+          resolveChickenObstacleCollision(chicken, previousX, previousY, collisionRadius);
           if (chicken.hostile && distance < (chicken.boss ? 42 : 28) && player.invulnerable <= 0) {
             damagePlayer(chicken.spiky ? 2 : 1);
             chicken.x -= Math.cos(chicken.direction) * 55;
@@ -1263,7 +1439,7 @@
           }
           goldenDrops.splice(i, 1);
           updateChickenBalance();
-          healthNode.textContent = `${health} / ${maxHealth}`;
+          updateHealthReadout();
         }
         for (let i = zombieShots.length - 1; i >= 0; i--) {
           const shot = zombieShots[i];
@@ -1331,19 +1507,23 @@
         secondsLeft = roundDuration;
         elapsed = 0;
         roundSpeedBonus = 0;
+        roundMaxHealthBonus = 0;
         roundHitProtectionBonus = 0;
         clearRoundActiveEffects();
+        dodgeCharges = dodgesPerRound;
+        updateDodgeStatus();
         timeNode.textContent = String(roundDuration);
         roundNode.textContent = round;
         player.x = width * .49;
         player.y = height * .54;
         health = maxHealth;
-        healthNode.textContent = `${health} / ${maxHealth}`;
+        updateHealthReadout();
         player.invulnerable = 0;
         chickens.length = 0;
         goldenDrops.length = 0;
         pendingZombieRespawns.length = 0;
         zombieShots.length = 0;
+        farmObstacles = round > 10 ? createFarmObstacleLayout() : [];
         for (let i = 0; i < 3 + bonusChickenCount; i++) {
           const chicken = { hostile: false };
           placeChicken(chicken, true);
@@ -1385,15 +1565,19 @@
         score = 0;
         chickenBalance = 0;
         bonusChickenCount = 0;
+        dodgesPerRound = 0;
+        dodgeCharges = 0;
         round = 1;
         health = 3;
         maxHealth = 3;
+        roundMaxHealthBonus = 0;
         moveSpeed = 205;
         pickupRadius = 25;
         hitProtection = 1.2;
         chickenFleeFactor = 1;
         zombieSpeedFactor = 1;
         activeOffers = [];
+        lockedOfferIds.clear();
         purchasedOfferIds.clear();
         rerollCount = 0;
         activeEffects.clear();
@@ -1406,7 +1590,7 @@
         weaponControls.hidden = true;
         weaponHelp.hidden = true;
         updateChickenBalance();
-        healthNode.textContent = "3 / 3";
+        updateHealthReadout();
         upgradePanel.hidden = true;
         weaponPanel.hidden = true;
         armorPanel.hidden = true;
@@ -1422,8 +1606,10 @@
         updateChickenBalance();
         offer.apply();
         purchasedOfferIds.add(offer.id);
-        healthNode.textContent = `${health} / ${maxHealth}`;
-        if (purchasedOfferIds.size === activeOffers.length) rerollUpgradeOffers(true);
+        lockedOfferIds.delete(offer.id);
+        updateHealthReadout();
+        const unlockedOffers = activeOffers.filter(item => !lockedOfferIds.has(item.id));
+        if (unlockedOffers.length > 0 && unlockedOffers.every(item => purchasedOfferIds.has(item.id))) rerollUpgradeOffers(true);
         else refreshUpgradeAvailability();
       }
 
@@ -1460,6 +1646,14 @@
         fullscreenButton.setAttribute("aria-label", label);
       });
       upgradePanel.addEventListener("click", event => {
+        const lockButton = event.target.closest("[data-lock-upgrade]");
+        if (lockButton && phase === "upgrade") {
+          const id = lockButton.dataset.lockUpgrade;
+          if (lockedOfferIds.has(id)) lockedOfferIds.delete(id);
+          else lockedOfferIds.add(id);
+          refreshUpgradeAvailability();
+          return;
+        }
         const button = event.target.closest("[data-upgrade]");
         if (button && phase === "upgrade") selectUpgrade(button.dataset.upgrade);
       });
