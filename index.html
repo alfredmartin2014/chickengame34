@@ -1626,6 +1626,9 @@
       function startGame() {
         window.clearTimeout(autoAdvanceTimer);
         autoAdvanceTimer = null;
+
+        homeMenu.hidden = true;
+        
         score = 0;
         chickenBalance = 0;
         bonusChickenCount = 0;
@@ -1678,6 +1681,13 @@
       }
 
       startButton.addEventListener("click", startGame);
+
+menuStartButton.addEventListener("click", () => {
+  farmerSkin = farmerSkinSelect.value;
+  chickenSkin = chickenSkinSelect.value;
+  homeMenu.hidden = true;
+  startGame();
+});
       rerollUpgradesButton.addEventListener("click", () => rerollUpgradeOffers());
       pauseButton.addEventListener("click", togglePause);
       restartButton.addEventListener("click", startGame);
