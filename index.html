@@ -1386,6 +1386,19 @@ function bulletHitsFarmObstacle(shot) {
     return Math.hypot(shot.x - nearestX, shot.y - nearestY) < shot.radius;
   });
 }
+<button id="hideUIButton">Hide All UI</button>
+const hideUIButton = document.getElementById("hideUIButton");
+
+hideUIButton.addEventListener("click", () => {
+    document.querySelectorAll(
+        "#buffs, #debuffs, #restartButton, .top-left-buttons"
+    ).forEach(element => {
+        element.style.display = "none";
+    });
+
+    hideUIButton.style.display = "none";
+});
+
       function update(delta) {
         elapsed += delta;
         if (celebration > 0) celebration = Math.max(0, celebration - delta * 2.3);
