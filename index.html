@@ -86,6 +86,30 @@
 
     .field-wrap { position: relative; }
     canvas { display: block; width: 100%; aspect-ratio: 16 / 9; }
+    .home-menu {
+      position: absolute;
+      z-index: 6;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(24, 47, 33, .38);
+    }
+    .home-menu-panel {
+      display: grid;
+      width: min(360px, 100%);
+      gap: 12px;
+      padding: 20px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      background: rgba(247, 245, 233, .96);
+      box-shadow: 0 5px 0 rgba(32, 59, 45, .2);
+    }
+    .home-menu-panel h2 { margin: 0; font: 700 25px Georgia, serif; }
+    .home-menu-kicker { margin: 0; color: #b65b42; font-size: 10px; font-weight: 900; letter-spacing: 1px; }
+    .skin-control { display: grid; gap: 5px; color: var(--muted); font-size: 11px; font-weight: 900; }
+    .skin-control select { width: 100%; min-height: 38px; padding: 7px 9px; border: 1px solid rgba(32, 59, 45, .3); border-radius: 5px; color: var(--ink); background: #fffdf5; font: inherit; }
+    .home-menu-panel .start-button { width: 100%; }
     .fullscreen-button {
       position: absolute;
       z-index: 3;
@@ -358,6 +382,27 @@
     <section class="game-shell" aria-label="Chicken Chase game">
       <div class="field-wrap">
         <canvas id="field" width="960" height="540" aria-label="A farmer chasing chickens across a grassy field"></canvas>
+        <section class="home-menu" id="home-menu" aria-label="Game home menu">
+          <div class="home-menu-panel">
+            <p class="home-menu-kicker">CHICKEN CHASE</p>
+            <h2>Choose your look</h2>
+            <label class="skin-control" for="farmer-skin">Farmer skin
+              <select id="farmer-skin">
+                <option value="classic">Ranch hand</option>
+                <option value="orchard">Orchard keeper</option>
+                <option value="denim">Blue denim</option>
+              </select>
+            </label>
+            <label class="skin-control" for="chicken-skin">Chicken skins
+              <select id="chicken-skin">
+                <option value="classic">Classic flock</option>
+                <option value="snow">Snowy flock</option>
+                <option value="russet">Russet flock</option>
+              </select>
+            </label>
+            <button class="start-button" id="menu-start" type="button">Start chasing</button>
+          </div>
+        </section>
         <div class="field-controls" aria-label="Game controls">
           <button class="field-control-button" id="pause-button" type="button" title="Pause game" aria-label="Pause game" disabled>⏸</button>
           <button class="field-control-button" id="restart-button" type="button" title="Restart run" aria-label="Restart run">↻</button>
@@ -385,7 +430,7 @@
           <div class="stat"><span class="stat-icon" aria-hidden="true">⏱</span><div><div class="stat-label">TIME</div><div class="stat-value" id="time">45</div></div></div>
           <div class="stat"><span class="stat-icon" aria-hidden="true">♥</span><div><div class="stat-label">HEALTH</div><div class="stat-value" id="health">3 / 3</div></div></div>
         </div>
-        <button class="start-button" id="start" type="button">Start chasing</button>
+        <button class="start-button" id="start" type="button" hidden>Restart run</button>
         <div class="weapon-controls" id="weapon-controls" hidden>
           <div class="weapon-readout"><span class="weapon-name" id="weapon-name">Weapon</span><span class="ammo-readout" id="ammo-readout">--</span></div>
           <button class="combat-button" id="attack-button" type="button" title="Attack (Space)">Attack</button>
@@ -466,6 +511,10 @@
       const healthNode = document.querySelector("#health");
       const roundNode = document.querySelector("#round");
       const startButton = document.querySelector("#start");
+      const homeMenu = document.querySelector("#home-menu");
+      const menuStartButton = document.querySelector("#menu-start");
+      const farmerSkinSelect = document.querySelector("#farmer-skin");
+      const chickenSkinSelect = document.querySelector("#chicken-skin");
       const gameShell = document.querySelector(".game-shell");
       const fullscreenButton = document.querySelector("#fullscreen-button");
       const pauseButton = document.querySelector("#pause-button");
@@ -516,7 +565,7 @@
       const touchInput = { x: 0, y: 0 };
       const player = { x: width * .49, y: height * .54, facing: 1 };
       let secondsLeft = roundDuration;
-      let phase = "ready";
+      let phase = "menu";
       let countdownRemaining = 0;
       let audioContext = null;
       let soundEnabled = true;
@@ -533,6 +582,8 @@
       let health = 3;
       let maxHealth = 3;
       let roundMaxHealthBonus = 0;
+      let farmerSkin = "classic";
+      let chickenSkin = "classic";
       let moveSpeed = 205;
       let roundSpeedBonus = 0;
       let pickupRadius = 25;
@@ -571,6 +622,17 @@
         knife: { id: "knife", name: "Knife", range: 90, damage: 1, cooldown: .24, speedModifier: 25, magazine: Infinity, ammo: Infinity, reserve: Infinity, reloadTime: 0, perk: "Quick strikes, +25 movement speed", debuff: "90 px reach" },
         sniper: { id: "sniper", name: "Sniper", range: 420, damage: 2, cooldown: 1.05, speedModifier: -45, magazine: 5, ammo: 5, reserve: 20, reloadTime: 1.5, perk: "420 px range, 2 damage", debuff: "Slow shots, -45 movement speed" },
         ak47: { id: "ak47", name: "AK-47", range: 220, damage: 1, cooldown: .16, speedModifier: -20, magazine: 30, ammo: 30, reserve: 90, reloadTime: 1.25, perk: "Rapid automatic fire", debuff: "-20 movement speed, frequent reloads" }
+      };
+
+      const farmerSkinPalettes = {
+        classic: { shirt: "#376f50", face: "#f2c9a2", brim: "#d7a948", crown: "#edc965" },
+        orchard: { shirt: "#a64e3b", face: "#d99c75", brim: "#71523b", crown: "#a8be59" },
+        denim: { shirt: "#416a91", face: "#efc49f", brim: "#4b4039", crown: "#d7ae58" }
+      };
+      const chickenSkinPalettes = {
+        classic: { body: "#fff8dc", wing: "#ede0b8", comb: "#df6350", beak: "#e5a63f" },
+        snow: { body: "#e7f2ef", wing: "#a9c8c2", comb: "#cb5260", beak: "#d99b38" },
+        russet: { body: "#c98b59", wing: "#87553d", comb: "#a73738", beak: "#edbd50" }
       };
 
       const armorCatalog = {
@@ -1160,7 +1222,8 @@
 
       function drawChicken(chicken) {
         const bob = Math.sin(chicken.flap) * 1.7;
-        const featherColor = chicken.golden ? "#f2c94c" : chicken.hostile ? "#a3ae78" : "#fff8dc";
+        const skin = chickenSkinPalettes[chickenSkin];
+        const featherColor = chicken.golden ? "#f2c94c" : chicken.hostile ? "#a3ae78" : skin.body;
         ctx.save();
         ctx.translate(chicken.x, chicken.y + bob);
         if (chicken.boss) ctx.scale(1.8, 1.8);
@@ -1187,13 +1250,13 @@
         ctx.stroke();
         ctx.fillStyle = featherColor;
         ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = chicken.hostile ? "#778656" : chicken.golden ? "#d2a51f" : "#ede0b8";
+        ctx.fillStyle = chicken.hostile ? "#778656" : chicken.golden ? "#d2a51f" : skin.wing;
         ctx.beginPath(); ctx.ellipse(-5, 1, 7, 5, -.3, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = featherColor;
         ctx.beginPath(); ctx.arc(10, -8, 8, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = chicken.hostile ? "#743f4b" : chicken.golden ? "#d89d20" : "#df6350";
+        ctx.fillStyle = chicken.hostile ? "#743f4b" : chicken.golden ? "#d89d20" : skin.comb;
         ctx.beginPath(); ctx.arc(7, -16, 3, 0, Math.PI * 2); ctx.arc(12, -17, 3, 0, Math.PI * 2); ctx.arc(16, -14, 3, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = chicken.hostile ? "#819052" : chicken.golden ? "#e7b52e" : "#e5a63f";
+        ctx.fillStyle = chicken.hostile ? "#819052" : chicken.golden ? "#e7b52e" : skin.beak;
         ctx.beginPath(); ctx.moveTo(17, -8); ctx.lineTo(24, -5); ctx.lineTo(17, -3); ctx.closePath(); ctx.fill();
         ctx.fillStyle = chicken.hostile ? "#e2504a" : chicken.golden ? "#493a31" : "#263b30";
         ctx.beginPath(); ctx.arc(12, -10, chicken.hostile ? 2.2 : 1.5, 0, Math.PI * 2); ctx.fill();
@@ -1224,20 +1287,21 @@
       }
 
       function drawPlayer() {
+        const skin = farmerSkinPalettes[farmerSkin];
         ctx.save();
         ctx.translate(player.x, player.y);
         if (phase === "playing" && player.invulnerable > 0 && Math.floor(elapsed * 12) % 2 === 0) ctx.globalAlpha = .4;
         ctx.fillStyle = "rgba(40,67,38,.2)";
         ctx.beginPath(); ctx.ellipse(0, 18, 19, 7, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#376f50";
+        ctx.fillStyle = skin.shirt;
         ctx.beginPath(); ctx.ellipse(0, 7, 13, 15, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#f2c9a2";
+        ctx.fillStyle = skin.face;
         ctx.beginPath(); ctx.arc(0, -9, 10, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = "#de7454";
         ctx.fillRect(-11, 0, 22, 4);
-        ctx.fillStyle = "#d7a948";
+        ctx.fillStyle = skin.brim;
         ctx.beginPath(); ctx.ellipse(0, -14, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#edc965";
+        ctx.fillStyle = skin.crown;
         ctx.beginPath(); ctx.ellipse(0, -17, 11, 6, 0, Math.PI, Math.PI * 2); ctx.fill();
         ctx.fillStyle = "#203b2d";
         ctx.beginPath(); ctx.arc(player.facing > 0 ? 4 : -4, -9, 1.5, 0, Math.PI * 2); ctx.fill();
