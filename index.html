@@ -379,6 +379,8 @@
       <div class="round-tag">ROUND <span id="round">1</span> · 45 SEC</div>
     </header>
 
+    <button id="hideUIButton">Hide All UI</button>
+
     <section class="game-shell" aria-label="Chicken Chase game">
       <div class="field-wrap">
         <canvas id="field" width="960" height="540" aria-label="A farmer chasing chickens across a grassy field"></canvas>
@@ -504,6 +506,8 @@
 
   <script>
     (() => {
+      const hideUIButton = document.querySelector("#hideUIButton");
+
       const canvas = document.querySelector("#field");
       const ctx = canvas.getContext("2d");
       const scoreNode = document.querySelector("#score");
@@ -1386,18 +1390,7 @@ function bulletHitsFarmObstacle(shot) {
     return Math.hypot(shot.x - nearestX, shot.y - nearestY) < shot.radius;
   });
 }
-<button id="hideUIButton">Hide All UI</button>
-const hideUIButton = document.getElementById("hideUIButton");
 
-hideUIButton.addEventListener("click", () => {
-    document.querySelectorAll(
-        "#buffs, #debuffs, #restartButton, .top-left-buttons"
-    ).forEach(element => {
-        element.style.display = "none";
-    });
-
-    hideUIButton.style.display = "none";
-});
 
       function update(delta) {
         elapsed += delta;
@@ -1479,15 +1472,28 @@ hideUIButton.addEventListener("click", () => {
             const speed = Math.min(waveSpeed, playerSpeedCap);
             chicken.x += Math.cos(chicken.direction) * speed * delta;
             chicken.y += Math.sin(chicken.direction) * speed * delta;
-          } else if (distance < 145) {
-            const strength = (145 - distance) / 145;
-            chicken.direction = Math.atan2(dy, dx) + Math.sin(elapsed * 4 + chicken.flap) * .34;
-            chicken.x += Math.cos(chicken.direction) * (80 + strength * 105) * chickenFleeFactor * delta;
-            chicken.y += Math.sin(chicken.direction) * (80 + strength * 105) * chickenFleeFactor * delta;
-          } else {
+       } else if (distance < 190) {
+  // Harder-to-catch chickens:
+  // Keep the same movement speed, but start fleeing earlier
+  // and steer more directly away from the player.
+  const strength = (190 - distance) / 190;
+
+  const awayAngle = Math.atan2(dy, dx);
+
+  // Stronger steering near the player, without increasing speed.
+  chicken.direction =
+    awayAngle +
+    Math.sin(elapsed * chicken.wander + chicken.flap) * (0.16 + strength * 0.12);
+
+  const chickenSpeed = (55 + strength * 75) * chickenFleeFactor;
+
+  chicken.x += Math.cos(chicken.direction) * chickenSpeed * delta;
+  chicken.y += Math.sin(chicken.direction) * chickenSpeed * delta;
+} else {
+
             chicken.direction += Math.sin(elapsed * chicken.wander + chicken.flap) * delta * .75;
-            chicken.x += Math.cos(chicken.direction) * 28 * delta;
-            chicken.y += Math.sin(chicken.direction) * 28 * delta;
+            chicken.x += Math.cos(chicken.direction) * 20 * delta;
+            chicken.y += Math.sin(chicken.direction) * 20 * delta;
           }
           if (chicken.enteringFromOffscreen && chicken.x >= 39 && chicken.x <= width - 39 && chicken.y >= 43 && chicken.y <= height - 43) {
             chicken.enteringFromOffscreen = false;
@@ -1698,6 +1704,17 @@ hideUIButton.addEventListener("click", () => {
         beginRound();
       }
 
+
+
+
+
+
+
+
+
+
+
+      
       function selectUpgrade(id) {
         const offer = activeOffers.find(item => item.id === id);
         if (phase !== "upgrade" || !offer) return;
@@ -1714,14 +1731,41 @@ hideUIButton.addEventListener("click", () => {
         else refreshUpgradeAvailability();
       }
 
+      hideUIButton.addEventListener("click", () => {
+  const hidden = activeEffectsPanel.hidden;
+
+  activeEffectsPanel.hidden = !hidden;
+  hideUIButton.textContent = hidden ? "Hide Buffs & Debuffs" : "Show Buffs & Debuffs";
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       startButton.addEventListener("click", startGame);
 
 menuStartButton.addEventListener("click", () => {
+  // Save the selected skins
   farmerSkin = farmerSkinSelect.value;
   chickenSkin = chickenSkinSelect.value;
-  homeMenu.hidden = true;
+
+  // Start the game
   startGame();
+
+  // Make absolutely sure the home menu is hidden
+  homeMenu.hidden = true;
 });
+
       rerollUpgradesButton.addEventListener("click", () => rerollUpgradeOffers());
       pauseButton.addEventListener("click", togglePause);
       restartButton.addEventListener("click", startGame);
