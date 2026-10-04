@@ -929,6 +929,15 @@
             return;
           }
           weapon.ammo--;
+
+          const damage = target.boss
+  ? weapon.damage
+  : weapon.id === "sniper"
+    ? 999
+    : weapon.damage;
+
+target.health -= damage;
+
         }
 
         weaponCooldown = weapon.cooldown;
@@ -1663,46 +1672,54 @@ function bulletHitsFarmObstacle(shot) {
         if (weapon) updateWeaponReadout();
       }
 
-      function startGame() {
-        window.clearTimeout(autoAdvanceTimer);
-        autoAdvanceTimer = null;
+    function startGame() {
+  console.log("START GAME CLICKED");
 
-        homeMenu.hidden = true;
+  window.clearTimeout(autoAdvanceTimer);
+  autoAdvanceTimer = null;
 
-        score = 0;
-        chickenBalance = 0;
-        bonusChickenCount = 0;
-        dodgesPerRound = 0;
-        dodgeCharges = 0;
-        round = 1;
-        health = 3;
-        maxHealth = 3;
-        roundMaxHealthBonus = 0;
-        moveSpeed = 205;
-        pickupRadius = 25;
-        hitProtection = 1.2;
-        chickenFleeFactor = 1;
-        zombieSpeedFactor = 1;
-        activeOffers = [];
-        lockedOfferIds.clear();
-        purchasedOfferIds.clear();
-        rerollCount = 0;
-        activeEffects.clear();
-        renderActiveEffects();
-        weapon = null;
-        weaponCooldown = 0;
-        reloadTimer = 0;
-        weaponRoundsPlayed = 0;
-        attackEffects.length = 0;
-        weaponControls.hidden = true;
-        weaponHelp.hidden = true;
-        updateChickenBalance();
-        updateHealthReadout();
-        upgradePanel.hidden = true;
-        weaponPanel.hidden = true;
-        armorPanel.hidden = true;
-        beginRound();
-      }
+  homeMenu.hidden = true;
+
+  score = 0;
+  chickenBalance = 0;
+  bonusChickenCount = 0;
+  dodgesPerRound = 0;
+  dodgeCharges = 0;
+  round = 1;
+  health = 3;
+  maxHealth = 3;
+  roundMaxHealthBonus = 0;
+  moveSpeed = 205;
+  pickupRadius = 25;
+  hitProtection = 1.2;
+  chickenFleeFactor = 1;
+  zombieSpeedFactor = 1;
+  activeOffers = [];
+  lockedOfferIds.clear();
+  purchasedOfferIds.clear();
+  rerollCount = 0;
+  activeEffects.clear();
+  renderActiveEffects();
+
+  weapon = null;
+  weaponCooldown = 0;
+  reloadTimer = 0;
+  weaponRoundsPlayed = 0;
+  attackEffects.length = 0;
+
+  weaponControls.hidden = true;
+  weaponHelp.hidden = true;
+
+  updateChickenBalance();
+  updateHealthReadout();
+
+  upgradePanel.hidden = true;
+  weaponPanel.hidden = true;
+  armorPanel.hidden = true;
+
+  beginRound();
+}
+
 
 
 
@@ -1755,16 +1772,14 @@ function bulletHitsFarmObstacle(shot) {
       startButton.addEventListener("click", startGame);
 
 menuStartButton.addEventListener("click", () => {
-  // Save the selected skins
+  console.log("BUTTON CLICKED");
+
   farmerSkin = farmerSkinSelect.value;
   chickenSkin = chickenSkinSelect.value;
 
-  // Start the game
   startGame();
-
-  // Make absolutely sure the home menu is hidden
-  homeMenu.hidden = true;
 });
+
 
       rerollUpgradesButton.addEventListener("click", () => rerollUpgradeOffers());
       pauseButton.addEventListener("click", togglePause);
