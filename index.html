@@ -65,15 +65,20 @@
     }
 
     .round-tag {
-      padding: 8px 12px;
-      border: 1px solid rgba(32, 59, 45, .22);
-      border-radius: 999px;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 1px;
+      display: flex;
+      min-width: 108px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      color: #fffdf5;
+      background: var(--green);
       white-space: nowrap;
     }
+    .round-label { font-size: 10px; font-weight: 900; letter-spacing: 1px; }
+    .round-number { font-size: 24px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
 
     .game-shell {
       position: relative;
@@ -359,8 +364,10 @@
     @media (max-width: 560px) {
       main { width: calc(100% - 20px); padding-top: 16px; }
       .topline { margin-bottom: 13px; }
-      .round-tag { padding: 7px 9px; font-size: 9px; letter-spacing: .6px; }
-      .brand { gap: 8px; }
+      .round-tag { min-width: 90px; gap: 5px; padding: 6px 7px; }
+      .round-label { font-size: 8px; letter-spacing: .6px; }
+      .round-number { font-size: 20px; }
+      .brand { gap: 6px; }
       .brand-mark { width: 36px; height: 36px; font-size: 20px; }
       .hud { min-height: 68px; padding: 10px; }
       .stats { gap: 10px; }
@@ -391,7 +398,7 @@
         <span class="brand-mark" aria-hidden="true">🐔</span>
         <h1>Chicken Chase</h1>
       </div>
-      <div class="round-tag">PRACTICE SET <span id="round">1</span> · 45 SEC</div>
+      <div class="round-tag" aria-label="Current wave"><span class="round-label">WAVE</span><span class="round-number" id="round">1</span></div>
     </header>
 
     <button id="hideUIButton">Hide Study Aids</button>
@@ -589,8 +596,12 @@
       const joystickKnob = document.querySelector("#joystick-knob");
       const width = canvas.width;
       const height = canvas.height;
+      const maximumWeaponRange = Math.ceil(Math.hypot(width, height));
       const roundDuration = 45;
+      const playerWallMarginX = 38;
+      const playerWallMarginY = 42;
       const playerRadius = 18;
+      const playerDiameter = playerRadius * 2;
       const keys = new Set();
       const grassMarks = [];
       const farmObstacleTypes = [
@@ -647,6 +658,7 @@
       let weaponCooldown = 0;
       let reloadTimer = 0;
       let weaponRoundsPlayed = 0;
+      let secretCodeProgress = "";
       let joystickPointerId = null;
       const attackEffects = [];
       const zombieShots = [];
@@ -663,7 +675,9 @@
         { id: "repellent", icon: "🧴", name: "Zombie repellent", description: "Zombie chickens move 18% slower", price: 8, apply: () => { zombieSpeedFactor *= .82; addActiveEffect("upgrade-repellent", "buff", "Repellent: zombies 18% slower"); } },
         { id: "extra-chicken", icon: "🐣", name: "Extra chicken", description: "+1 collectible chicken each round", price: 50, apply: () => { bonusChickenCount++; addActiveEffect("upgrade-chicken", "buff", "Extra chicken: +1 each round"); } },
         { id: "dodge", icon: "🛡️", name: "Dodge Training", description: "+3 charges each round to null incoming attacks", price: 30, apply: () => { dodgesPerRound += 3; addActiveEffect("upgrade-dodge", "buff", "Dodge Training: +3 charges each round"); } },
-        { id: "regeneration", icon: "❤️", name: "Regeneration", description: "Restore 1 health every 15 seconds", price: 40, apply: () => { if (!healthRegenerationEnabled) { healthRegenerationEnabled = true; healthRegenerationTimer = 0; addActiveEffect("upgrade-regeneration", "buff", "Regeneration: +1 health every 15 seconds"); } } }
+        { id: "regeneration", icon: "❤️", name: "Regeneration", description: "Restore 1 health every 15 seconds", price: 40, apply: () => { if (!healthRegenerationEnabled) { healthRegenerationEnabled = true; healthRegenerationTimer = 0; addActiveEffect("upgrade-regeneration", "buff", "Regeneration: +1 health every 15 seconds"); } } },
+        { id: "gun-damage", icon: "💥", name: "Weapon damage", description: "+1 damage with your weapon", price: 30, requiresWeapon: true, apply: () => { weapon.damage++; addActiveEffect("upgrade-gun-damage", "buff", `${weapon.name}: +1 damage`); } },
+        { id: "gun-range", icon: "🎯", name: "Weapon range", description: "+25% range with your weapon", price: 25, requiresRangedWeapon: true, apply: () => { weapon.range = Math.min(maximumWeaponRange, Math.round(weapon.range * 1.25)); addActiveEffect("upgrade-gun-range", "buff", `${weapon.name}: +25% range`); } }
       ];
 
       const weaponCatalog = {
@@ -748,8 +762,14 @@
             const template = farmObstacleTypes[Math.floor(Math.random() * farmObstacleTypes.length)];
             const obstacle = {
               ...template,
-              x: Math.max(45, Math.min(width - template.width - 45, spot.x + Math.random() * 36 - 18)),
-              y: Math.max(45, Math.min(height - template.height - 45, spot.y + Math.random() * 36 - 18))
+              x: Math.max(
+                playerWallMarginX + playerRadius + playerDiameter,
+                Math.min(width - playerWallMarginX - playerRadius - playerDiameter - template.width, spot.x + Math.random() * 36 - 18)
+              ),
+              y: Math.max(
+                playerWallMarginY + playerRadius + playerDiameter,
+                Math.min(height - playerWallMarginY - playerRadius - playerDiameter - template.height, spot.y + Math.random() * 36 - 18)
+              )
             };
             if (obstacles.every(existing => farmObstaclesAreSeparated(obstacle, existing))) {
               obstacles.push(obstacle);
@@ -814,8 +834,9 @@
       }
 
       function updateChickenBalance() {
-        scoreNode.textContent = chickenBalance;
-        bankCountNode.textContent = chickenBalance;
+        const displayedBalance = chickenBalance === Infinity ? "∞" : chickenBalance;
+        scoreNode.textContent = displayedBalance;
+        bankCountNode.textContent = displayedBalance;
       }
 
       function updateHealthReadout() {
@@ -1122,6 +1143,12 @@
         return Math.ceil(offer.price * Math.pow(1.1, round));
       }
 
+      function isUpgradeEligible(offer) {
+        if (offer.requiresWeapon && !weapon) return false;
+        if (offer.requiresRangedWeapon && (!weapon || weapon.id === "knife" || weapon.range >= maximumWeaponRange)) return false;
+        return true;
+      }
+
       function getUpgradeRerollCost() {
         return Math.ceil(2 * Math.pow(1.1, rerollCount));
       }
@@ -1152,19 +1179,20 @@
 
       function showUpgradeOffers() {
         purchasedOfferIds.clear();
-        const shuffled = [...upgradeCatalog];
+        const eligibleUpgrades = upgradeCatalog.filter(isUpgradeEligible);
+        const shuffled = [...eligibleUpgrades];
         for (let i = shuffled.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
         const lockedOffers = [...lockedOfferIds]
-          .map(id => upgradeCatalog.find(offer => offer.id === id))
+          .map(id => eligibleUpgrades.find(offer => offer.id === id))
           .filter(Boolean);
         const lockedIds = new Set(lockedOffers.map(offer => offer.id));
         const newOffers = shuffled.filter(offer => !lockedIds.has(offer.id));
         activeOffers = [...lockedOffers, ...newOffers.slice(0, 3 - lockedOffers.length)];
         if (round === 1 && chickenBalance > 8 && !activeOffers.some(offer => chickenBalance >= getUpgradePrice(offer))) {
-          const affordableOffer = upgradeCatalog.find(offer => !lockedIds.has(offer.id) && chickenBalance >= getUpgradePrice(offer));
+          const affordableOffer = eligibleUpgrades.find(offer => !lockedIds.has(offer.id) && chickenBalance >= getUpgradePrice(offer));
           const replaceIndex = activeOffers.findIndex(offer => !lockedOfferIds.has(offer.id));
           if (affordableOffer && replaceIndex >= 0) activeOffers[replaceIndex] = affordableOffer;
         }
@@ -1557,9 +1585,9 @@ function bulletHitsFarmObstacle(shot) {
         const vertical = (keys.has("ArrowDown") ? 1 : 0) - (keys.has("ArrowUp") ? 1 : 0) + touchInput.y;
         const length = Math.hypot(horizontal, vertical) || 1;
         const playerMoveSpeed = moveSpeed + roundSpeedBonus;
-        const nextPlayerX = Math.max(38, Math.min(width - 38, player.x + horizontal / length * playerMoveSpeed * delta));
+        const nextPlayerX = Math.max(playerWallMarginX, Math.min(width - playerWallMarginX, player.x + horizontal / length * playerMoveSpeed * delta));
         if (!collidesWithFarmObstacle(nextPlayerX, player.y, playerRadius)) player.x = nextPlayerX;
-        const nextPlayerY = Math.max(42, Math.min(height - 42, player.y + vertical / length * playerMoveSpeed * delta));
+        const nextPlayerY = Math.max(playerWallMarginY, Math.min(height - playerWallMarginY, player.y + vertical / length * playerMoveSpeed * delta));
         if (!collidesWithFarmObstacle(player.x, nextPlayerY, playerRadius)) player.y = nextPlayerY;
         if (horizontal) player.facing = Math.sign(horizontal);
 
@@ -1800,7 +1828,7 @@ function bulletHitsFarmObstacle(shot) {
         if (round % 10 === 0) {
           const bossHealth = 30 * Math.pow(1.05, round - 10) * 1.5;
           const boss = { hostile: true, boss: true, health: bossHealth, maxHealth: bossHealth, shootCooldown: .8 + Math.random() * 1.2 };
-          placeChickenOffscreen(boss);
+          placeChicken(boss, true);
           chickens.push(boss);
         }
         countdownRemaining = 5;
@@ -1870,6 +1898,80 @@ function bulletHitsFarmObstacle(shot) {
         startGame();
       }
 
+      function respawnAtCurrentRound() {
+        window.clearTimeout(autoAdvanceTimer);
+        autoAdvanceTimer = null;
+        homeMenu.hidden = true;
+        respawnDialog.hidden = true;
+        keys.clear();
+        resetJoystick();
+        attackEffects.length = 0;
+        weaponCooldown = 0;
+        reloadTimer = 0;
+        upgradePanel.hidden = true;
+        weaponPanel.hidden = true;
+        armorPanel.hidden = true;
+        weaponControls.hidden = !weapon;
+        weaponHelp.hidden = !weapon;
+        beginRound();
+        updateWeaponReadout();
+      }
+
+      function activateSecretCode() {
+        if (phase === "menu" || phase === "gameover" || !respawnDialog.hidden) return;
+        const selectedWeapon = weaponCatalog.ak47;
+        moveSpeed = Math.max(100, moveSpeed + selectedWeapon.speedModifier - (weapon?.speedModifier || 0));
+        weapon = { ...selectedWeapon };
+        weaponCooldown = 0;
+        reloadTimer = 0;
+        weaponRoundsPlayed = 0;
+        weaponControls.hidden = false;
+        weaponHelp.hidden = false;
+        upgradePanel.hidden = true;
+        weaponPanel.hidden = true;
+        armorPanel.hidden = true;
+        gameOverActions.hidden = true;
+        chickenBalance = Infinity;
+        updateChickenBalance();
+        round = 8;
+        roundNode.textContent = String(round);
+        nextRoundNode.textContent = String(round + 1);
+        keys.clear();
+        resetJoystick();
+        chickens.length = 0;
+        goldenDrops.length = 0;
+        pendingZombieRespawns.length = 0;
+        zombieShots.length = 0;
+        attackEffects.length = 0;
+        phase = "upgrade";
+        upgradePanel.hidden = false;
+        showUpgradeOffers();
+        updateWeaponReadout();
+      }
+
+      function trackSecretCodeKey(event) {
+        if (event.repeat) return;
+        const target = event.target;
+        if (
+          phase === "menu" ||
+          phase === "gameover" ||
+          !respawnDialog.hidden ||
+          (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|SELECT|TEXTAREA)$/.test(target.tagName)))
+        ) {
+          secretCodeProgress = "";
+          return;
+        }
+        if (!/^\d$/.test(event.key)) {
+          secretCodeProgress = "";
+          return;
+        }
+        secretCodeProgress = (secretCodeProgress + event.key).slice(-6);
+        if (secretCodeProgress === "778899") {
+          secretCodeProgress = "";
+          activateSecretCode();
+        }
+      }
+
       function returnToStartMenu() {
         window.clearTimeout(autoAdvanceTimer);
         autoAdvanceTimer = null;
@@ -1908,6 +2010,13 @@ function bulletHitsFarmObstacle(shot) {
         offer.apply();
         purchasedOfferIds.add(offer.id);
         lockedOfferIds.delete(offer.id);
+        if (offer.id === "gun-range" && weapon.range >= maximumWeaponRange) {
+          activeOffers = activeOffers.filter(activeOffer => activeOffer.id !== offer.id);
+          const rangeOption = [...upgradeGridNode.querySelectorAll("[data-upgrade]")]
+            .find(button => button.dataset.upgrade === offer.id)
+            ?.closest(".upgrade-option");
+          rangeOption?.remove();
+        }
         updateHealthReadout();
         const unlockedOffers = activeOffers.filter(item => !lockedOfferIds.has(item.id));
         if (unlockedOffers.length > 0 && unlockedOffers.every(item => purchasedOfferIds.has(item.id))) rerollUpgradeOffers(true);
@@ -1940,8 +2049,7 @@ function bulletHitsFarmObstacle(shot) {
       respawnForm.addEventListener("submit", event => {
         event.preventDefault();
         if (respawnCodeInput.value === "6415") {
-          respawnDialog.hidden = true;
-          startGame();
+          respawnAtCurrentRound();
         } else {
           respawnErrorMessage.textContent = "That code is incorrect. Ask Alfred for the right code.";
           respawnErrorJoke.textContent = "u thought lol";
@@ -2041,6 +2149,7 @@ menuStartButton.addEventListener("click", () => {
         });
       }
       window.addEventListener("keydown", event => {
+        trackSecretCodeKey(event);
         if (event.key === "Escape" || event.key.toLowerCase() === "p") {
           event.preventDefault();
           if (!event.repeat) togglePause();
