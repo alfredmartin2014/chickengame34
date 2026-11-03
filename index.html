@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chicken Chase</title>
+  <title>Chicken Chase | Maths Practice</title>
   <style>
     :root {
       color-scheme: light;
@@ -376,67 +376,67 @@
         <span class="brand-mark" aria-hidden="true">🐔</span>
         <h1>Chicken Chase</h1>
       </div>
-      <div class="round-tag">ROUND <span id="round">1</span> · 45 SEC</div>
+      <div class="round-tag">PRACTICE SET <span id="round">1</span> · 45 SEC</div>
     </header>
 
-    <button id="hideUIButton">Hide All UI</button>
+    <button id="hideUIButton">Hide Study Aids</button>
 
-    <section class="game-shell" aria-label="Chicken Chase game">
+    <section class="game-shell" aria-label="Chicken Chase maths practice">
       <div class="field-wrap">
-        <canvas id="field" width="960" height="540" aria-label="A farmer chasing chickens across a grassy field"></canvas>
-        <section class="home-menu" id="home-menu" aria-label="Game home menu">
+        <canvas id="field" width="960" height="540" aria-label="Chicken Chase interactive maths practice area"></canvas>
+        <section class="home-menu" id="home-menu" aria-label="Maths practice welcome">
           <div class="home-menu-panel">
-            <p class="home-menu-kicker">CHICKEN CHASE</p>
-            <h2>Choose your look</h2>
-            <label class="skin-control" for="farmer-skin">Farmer skin
+            <p class="home-menu-kicker">CHICKEN CHASE · MATHS PRACTICE</p>
+            <h2>Welcome to practice</h2>
+            <label class="skin-control" for="farmer-skin">Learner theme
               <select id="farmer-skin">
-                <option value="classic">Ranch hand</option>
-                <option value="orchard">Orchard keeper</option>
-                <option value="denim">Blue denim</option>
+                <option value="classic">Classic</option>
+                <option value="orchard">Orchard</option>
+                <option value="denim">Denim</option>
               </select>
             </label>
-            <label class="skin-control" for="chicken-skin">Chicken skins
+            <label class="skin-control" for="chicken-skin">Display palette
               <select id="chicken-skin">
-                <option value="classic">Classic flock</option>
-                <option value="snow">Snowy flock</option>
-                <option value="russet">Russet flock</option>
+                <option value="classic">Classic</option>
+                <option value="snow">Cool tones</option>
+                <option value="russet">Warm tones</option>
               </select>
             </label>
-            <button class="start-button" id="menu-start" type="button">Start chasing</button>
+            <button class="start-button" id="menu-start" type="button">Begin practice</button>
           </div>
         </section>
-        <div class="field-controls" aria-label="Game controls">
-          <button class="field-control-button" id="pause-button" type="button" title="Pause game" aria-label="Pause game" disabled>⏸</button>
-          <button class="field-control-button" id="restart-button" type="button" title="Restart run" aria-label="Restart run">↻</button>
+        <div class="field-controls" aria-label="Practice controls">
+          <button class="field-control-button" id="pause-button" type="button" title="Pause practice" aria-label="Pause practice" disabled>⏸</button>
+          <button class="field-control-button" id="restart-button" type="button" title="Restart practice" aria-label="Restart practice">↻</button>
           <details class="sound-menu">
-            <summary title="Sound settings" aria-label="Sound settings">♫</summary>
+            <summary title="Audio settings" aria-label="Audio settings">♫</summary>
             <div class="sound-popover">
-              <label class="sound-toggle"><input id="sound-enabled" type="checkbox" checked> Sound effects</label>
+              <label class="sound-toggle"><input id="sound-enabled" type="checkbox" checked> Audio cues</label>
               <label class="sound-volume" for="sound-volume">Volume <output id="sound-volume-value">35%</output><input id="sound-volume" type="range" min="0" max="100" value="35"></label>
             </div>
           </details>
         </div>
         <button class="fullscreen-button" id="fullscreen-button" type="button" title="Enter fullscreen" aria-label="Enter fullscreen">⛶</button>
-        <aside class="active-effects-panel" id="active-effects-panel" aria-label="Current buffs and debuffs" hidden>
-          <p class="active-effects-heading">BUFFS &amp; DEBUFFS</p>
+        <aside class="active-effects-panel" id="active-effects-panel" aria-label="Current study aids" hidden>
+          <p class="active-effects-heading">STUDY AIDS</p>
           <ul class="active-effects-list" id="active-effects-list"></ul>
         </aside>
-        <div class="dodge-counter" title="Dodge charges remaining" aria-label="Dodge charges remaining" aria-live="polite"><span aria-hidden="true">🛡</span><span id="dodge-count">0</span></div>
+        <div class="dodge-counter" title="Hints available" aria-label="Hints available" aria-live="polite"><span aria-hidden="true">🛡</span><span id="dodge-count">0</span></div>
         <div class="touch-joystick" id="touch-joystick" hidden>
-          <div class="joystick-ring" id="joystick-ring" role="application" aria-label="Movement joystick"><div class="joystick-knob" id="joystick-knob"></div></div>
+          <div class="joystick-ring" id="joystick-ring" role="application" aria-label="Practice navigation control"><div class="joystick-knob" id="joystick-knob"></div></div>
         </div>
       </div>
       <div class="hud">
         <div class="stats" aria-live="polite">
-          <div class="stat"><span class="stat-icon" aria-hidden="true">🐣</span><div><div class="stat-label">CHICKENS</div><div class="stat-value" id="score">0</div></div></div>
+          <div class="stat"><span class="stat-icon" aria-hidden="true">∑</span><div><div class="stat-label">POINTS</div><div class="stat-value" id="score">0</div></div></div>
           <div class="stat"><span class="stat-icon" aria-hidden="true">⏱</span><div><div class="stat-label">TIME</div><div class="stat-value" id="time">45</div></div></div>
-          <div class="stat"><span class="stat-icon" aria-hidden="true">♥</span><div><div class="stat-label">HEALTH</div><div class="stat-value" id="health">3 / 3</div></div></div>
+          <div class="stat"><span class="stat-icon" aria-hidden="true">✓</span><div><div class="stat-label">TRIES</div><div class="stat-value" id="health">3 / 3</div></div></div>
         </div>
-        <button class="start-button" id="start" type="button" hidden>Restart run</button>
+        <button class="start-button" id="start" type="button" hidden>Practice again</button>
         <div class="weapon-controls" id="weapon-controls" hidden>
-          <div class="weapon-readout"><span class="weapon-name" id="weapon-name">Weapon</span><span class="ammo-readout" id="ammo-readout">--</span></div>
-          <button class="combat-button" id="attack-button" type="button" title="Attack (Space)">Attack</button>
-          <button class="combat-button" id="reload-button" type="button" title="Reload (R)">Reload</button>
+          <div class="weapon-readout"><span class="weapon-name" id="weapon-name">Practice tool</span><span class="ammo-readout" id="ammo-readout">--</span></div>
+          <button class="combat-button" id="attack-button" type="button" title="Try a question (Space)">Try</button>
+          <button class="combat-button" id="reload-button" type="button" title="Reset practice (R)">Reset</button>
         </div>
       </div>
       <section class="upgrade-panel" id="upgrade-panel" aria-labelledby="upgrade-title" hidden>
@@ -495,12 +495,12 @@
     </section>
 
     <footer class="bottomline">
-      <div class="controls" aria-label="Move with arrow keys">
+      <div class="controls" aria-label="Navigate with arrow keys">
         <span class="key-group" aria-hidden="true"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
-        <span>ARROW KEYS TO MOVE</span>
-        <span id="weapon-help" hidden>SPACE TO ATTACK · R TO RELOAD</span>
+        <span>ARROW KEYS TO NAVIGATE</span>
+        <span id="weapon-help" hidden>SPACE TO TRY · R TO RESET</span>
       </div>
-      <div class="credit">Those feathers won't chase themselves.</div>
+      <div class="credit">Build your number sense, one step at a time.</div>
     </footer>
   </main>
 
@@ -763,7 +763,7 @@
         const canPause = phase === "playing" || phase === "countdown" || phase === "paused";
         pauseButton.disabled = !canPause;
         const paused = phase === "paused";
-        const label = paused ? "Resume game" : "Pause game";
+        const label = paused ? "Resume practice" : "Pause practice";
         pauseButton.textContent = paused ? "▶" : "⏸";
         pauseButton.title = label;
         pauseButton.setAttribute("aria-label", label);
@@ -889,7 +889,7 @@
         weaponNameNode.textContent = weapon.name;
         ammoReadoutNode.textContent = weapon.magazine === Infinity ? "Unlimited" : `${weapon.ammo} / ${weapon.reserve}`;
         reloadButton.disabled = phase !== "playing" || weapon.magazine === Infinity || weapon.ammo === weapon.magazine || weapon.reserve === 0 || reloadTimer > 0;
-        reloadButton.textContent = reloadTimer > 0 ? "Reloading..." : "Reload";
+        reloadButton.textContent = reloadTimer > 0 ? "Resetting..." : "Reset";
         attackButton.disabled = phase !== "playing" || reloadTimer > 0 || (weapon.magazine !== Infinity && weapon.ammo === 0 && weapon.reserve === 0);
       }
 
@@ -914,7 +914,7 @@
         if (health === 0) {
           phase = "gameover";
           startButton.hidden = false;
-          startButton.textContent = "Play again";
+          startButton.textContent = "Practice again";
           upgradePanel.hidden = true;
           keys.clear();
         }
@@ -929,17 +929,7 @@
             return;
           }
           weapon.ammo--;
-
-          const damage = target.boss
-  ? weapon.damage
-  : weapon.id === "sniper"
-    ? 999
-    : weapon.damage;
-
-target.health -= damage;
-
         }
-<script src="game.js"></script>
 
         weaponCooldown = weapon.cooldown;
         playTone(weapon.id === "knife" ? 480 : weapon.id === "sniper" ? 190 : 310, .055, weapon.id === "knife" ? "triangle" : "square");
@@ -1366,13 +1356,13 @@ target.health -= damage;
           ctx.restore();
         }
         drawPlayer();
-        if (phase === "ready") drawOverlay("Ready, ranch hand?", "START CHASING WHEN YOU'RE READY");
+        if (phase === "ready") drawOverlay("Ready to practise?", "START YOUR NUMBER CHALLENGE WHEN YOU'RE READY");
         if (phase === "countdown") drawOverlay("Get ready!", String(Math.ceil(countdownRemaining)));
-        if (phase === "paused") drawOverlay("Paused", "GAME PAUSED");
+        if (phase === "paused") drawOverlay("Practice paused", "YOUR SESSION IS PAUSED");
         if (phase === "upgrade") drawOverlay("Round complete!", "CHOOSE AN UPGRADE BELOW");
         if (phase === "weapon") drawOverlay("Pick your weapon!", "CHOOSE YOUR LOADOUT FOR ROUND 5");
         if (phase === "armor") drawOverlay("Choose your armor!", "PICK YOUR ARMOR FOR ROUND 15");
-        if (phase === "gameover") drawOverlay("Out of health!", `${score} chickens caught across ${round} rounds`);
+        if (phase === "gameover") drawOverlay("Practice complete!", `${score} points earned across ${round} sets`);
         for (const effect of attackEffects) {
           ctx.strokeStyle = effect.color;
           ctx.globalAlpha = Math.min(1, effect.time / .12);
@@ -1669,7 +1659,7 @@ function bulletHitsFarmObstacle(shot) {
         phase = "countdown";
         syncPauseButton();
         startButton.hidden = Boolean(weapon);
-        startButton.textContent = "Restart run";
+        startButton.textContent = "Restart practice";
         if (weapon) updateWeaponReadout();
       }
 
@@ -1753,7 +1743,7 @@ function bulletHitsFarmObstacle(shot) {
   const hidden = activeEffectsPanel.hidden;
 
   activeEffectsPanel.hidden = !hidden;
-  hideUIButton.textContent = hidden ? "Hide Buffs & Debuffs" : "Show Buffs & Debuffs";
+  hideUIButton.textContent = hidden ? "Hide Study Aids" : "Show Study Aids";
 });
 
 
