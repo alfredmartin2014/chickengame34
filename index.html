@@ -304,6 +304,20 @@
     .stat-icon { font-size: 20px; }
     .stat-label { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: 1px; }
     .stat-value { font-size: 21px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .gold-stack-icon { position: relative; display: inline-block; width: 23px; height: 23px; flex: 0 0 23px; }
+    .gold-stack-icon i { position: absolute; left: 2px; width: 19px; height: 8px; border: 1px solid #9a6714; border-radius: 50%; background: linear-gradient(#ffe88a, #e5a92c); }
+    .gold-stack-icon i:nth-child(1) { bottom: 1px; }
+    .gold-stack-icon i:nth-child(2) { bottom: 6px; }
+    .gold-stack-icon i:nth-child(3) { bottom: 11px; }
+    .respawn-dialog { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(24, 47, 33, .58); }
+    .respawn-panel { display: grid; width: min(340px, 100%); gap: 12px; padding: 20px; border: 2px solid var(--ink); border-radius: 8px; background: #fffdf5; box-shadow: 0 5px 0 rgba(32, 59, 45, .2); }
+    .respawn-panel h2 { margin: 0; font: 700 24px Georgia, serif; }
+    .respawn-panel label { display: grid; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 900; }
+    .respawn-panel input { min-height: 42px; padding: 8px 10px; border: 1px solid rgba(32, 59, 45, .35); border-radius: 5px; color: var(--ink); background: white; font: 700 18px "Trebuchet MS", sans-serif; letter-spacing: 3px; }
+    .respawn-panel input:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+    .respawn-error { min-height: 16px; margin: 0; color: #b65b42; font-size: 11px; font-weight: 800; }
+    .respawn-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .game-over-actions { display: flex; align-items: center; gap: 8px; }
 
     .start-button {
       min-width: 140px;
@@ -428,11 +442,14 @@
       </div>
       <div class="hud">
         <div class="stats" aria-live="polite">
-          <div class="stat"><span class="stat-icon" aria-hidden="true">∑</span><div><div class="stat-label">POINTS</div><div class="stat-value" id="score">0</div></div></div>
+          <div class="stat"><span class="gold-stack-icon" aria-hidden="true"><i></i><i></i><i></i></span><div><div class="stat-label">GOLD</div><div class="stat-value" id="score">0</div></div></div>
           <div class="stat"><span class="stat-icon" aria-hidden="true">⏱</span><div><div class="stat-label">TIME</div><div class="stat-value" id="time">45</div></div></div>
           <div class="stat"><span class="stat-icon" aria-hidden="true">✓</span><div><div class="stat-label">TRIES</div><div class="stat-value" id="health">3 / 3</div></div></div>
         </div>
-        <button class="start-button" id="start" type="button" hidden>Practice again</button>
+        <div class="game-over-actions" id="game-over-actions" hidden>
+          <button class="start-button" id="start" type="button">Respawn</button>
+          <button class="combat-button" id="restart-to-menu" type="button">Restart</button>
+        </div>
         <div class="weapon-controls" id="weapon-controls" hidden>
           <div class="weapon-readout"><span class="weapon-name" id="weapon-name">Practice tool</span><span class="ammo-readout" id="ammo-readout">--</span></div>
           <button class="combat-button" id="attack-button" type="button" title="Try a question (Space)">Try</button>
@@ -494,6 +511,20 @@
       </section>
     </section>
 
+    <section class="respawn-dialog" id="respawn-dialog" role="dialog" aria-modal="true" aria-labelledby="respawn-title" hidden>
+      <form class="respawn-panel" id="respawn-form">
+        <h2 id="respawn-title">Ask Alfred for the code</h2>
+        <label for="respawn-code">Respawn code
+          <input id="respawn-code" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
+        </label>
+        <p class="respawn-error" id="respawn-error" aria-live="assertive"></p>
+        <div class="respawn-actions">
+          <button class="combat-button" id="cancel-respawn" type="button">Cancel</button>
+          <button class="start-button" type="submit">Respawn</button>
+        </div>
+      </form>
+    </section>
+
     <footer class="bottomline">
       <div class="controls" aria-label="Navigate with arrow keys">
         <span class="key-group" aria-hidden="true"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
@@ -515,6 +546,8 @@
       const healthNode = document.querySelector("#health");
       const roundNode = document.querySelector("#round");
       const startButton = document.querySelector("#start");
+      const gameOverActions = document.querySelector("#game-over-actions");
+      const restartToMenuButton = document.querySelector("#restart-to-menu");
       const homeMenu = document.querySelector("#home-menu");
       const menuStartButton = document.querySelector("#menu-start");
       const farmerSkinSelect = document.querySelector("#farmer-skin");
@@ -523,6 +556,11 @@
       const fullscreenButton = document.querySelector("#fullscreen-button");
       const pauseButton = document.querySelector("#pause-button");
       const restartButton = document.querySelector("#restart-button");
+      const respawnDialog = document.querySelector("#respawn-dialog");
+      const respawnForm = document.querySelector("#respawn-form");
+      const respawnCodeInput = document.querySelector("#respawn-code");
+      const respawnError = document.querySelector("#respawn-error");
+      const cancelRespawnButton = document.querySelector("#cancel-respawn");
       const dodgeCountNode = document.querySelector("#dodge-count");
       const soundEnabledInput = document.querySelector("#sound-enabled");
       const soundVolumeInput = document.querySelector("#sound-volume");
@@ -550,6 +588,7 @@
       const width = canvas.width;
       const height = canvas.height;
       const roundDuration = 45;
+      const playerRadius = 18;
       const keys = new Set();
       const grassMarks = [];
       const farmObstacleTypes = [
@@ -677,6 +716,20 @@
         });
       }
 
+      function farmObstaclesAreSeparated(first, second) {
+        const horizontalGap = Math.max(
+          0,
+          second.x - (first.x + first.width),
+          first.x - (second.x + second.width)
+        );
+        const verticalGap = Math.max(
+          0,
+          second.y - (first.y + first.height),
+          first.y - (second.y + second.height)
+        );
+        return Math.hypot(horizontalGap, verticalGap) >= playerRadius * 2;
+      }
+
       function createFarmObstacleLayout() {
         const spots = [...farmObstacleSpots];
         for (let i = spots.length - 1; i > 0; i--) {
@@ -684,14 +737,23 @@
           [spots[i], spots[j]] = [spots[j], spots[i]];
         }
         const count = 3 + Math.floor(Math.random() * 4);
-        return spots.slice(0, count).map(spot => {
-          const template = farmObstacleTypes[Math.floor(Math.random() * farmObstacleTypes.length)];
-          return {
-            ...template,
-            x: Math.max(45, Math.min(width - template.width - 45, spot.x + Math.random() * 36 - 18)),
-            y: Math.max(45, Math.min(height - template.height - 45, spot.y + Math.random() * 36 - 18))
-          };
-        });
+        const obstacles = [];
+        for (const spot of spots) {
+          for (let attempt = 0; attempt < 20; attempt++) {
+            const template = farmObstacleTypes[Math.floor(Math.random() * farmObstacleTypes.length)];
+            const obstacle = {
+              ...template,
+              x: Math.max(45, Math.min(width - template.width - 45, spot.x + Math.random() * 36 - 18)),
+              y: Math.max(45, Math.min(height - template.height - 45, spot.y + Math.random() * 36 - 18))
+            };
+            if (obstacles.every(existing => farmObstaclesAreSeparated(obstacle, existing))) {
+              obstacles.push(obstacle);
+              break;
+            }
+          }
+          if (obstacles.length === count) break;
+        }
+        return obstacles;
       }
 
       function resolveChickenObstacleCollision(chicken, previousX, previousY, radius) {
@@ -835,6 +897,17 @@
         goldenDrops.push({ x: chicken.x, y: chicken.y, kind: "buff", ...buff });
       }
 
+      function dropZombieGoldPackage(chicken) {
+        if (Math.random() < .1) {
+          goldenDrops.push({
+            x: chicken.x,
+            y: chicken.y,
+            kind: "gold-package",
+            amount: 3 + Math.floor(Math.random() * 5)
+          });
+        }
+      }
+
       function respawnCollectibleChicken(chicken) {
         chicken.golden = Math.random() < .05;
         if (chicken.golden) {
@@ -913,8 +986,7 @@
         player.invulnerable = hitProtection + roundHitProtectionBonus;
         if (health === 0) {
           phase = "gameover";
-          startButton.hidden = false;
-          startButton.textContent = "Practice again";
+          gameOverActions.hidden = false;
           upgradePanel.hidden = true;
           keys.clear();
         }
@@ -952,7 +1024,10 @@
               defeatGoldenChicken(target);
             } else {
               chickens.splice(chickens.indexOf(target), 1);
-              if (target.hostile) pendingZombieRespawns.push({ timer: 10, zombie: { ...target } });
+              if (target.hostile) {
+                dropZombieGoldPackage(target);
+                pendingZombieRespawns.push({ timer: 10, zombie: { ...target } });
+              }
             }
           }
         }
@@ -1329,6 +1404,33 @@
         drawFarmObstacles();
         for (const chicken of chickens) drawChicken(chicken);
         for (const drop of goldenDrops) {
+          if (drop.kind === "gold-package") {
+            ctx.save();
+            ctx.translate(drop.x, drop.y);
+            ctx.fillStyle = "rgba(32,59,45,.28)";
+            ctx.beginPath(); ctx.ellipse(0, 12, 15, 5, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#a96e16";
+            ctx.fillRect(-12, -5, 24, 17);
+            ctx.fillStyle = "#f2c94c";
+            ctx.fillRect(-10, -7, 20, 15);
+            ctx.fillStyle = "#c8871d";
+            ctx.fillRect(-3, -7, 6, 15);
+            ctx.fillRect(-10, -1, 20, 4);
+            ctx.fillStyle = "#ffe88a";
+            ctx.beginPath();
+            ctx.ellipse(0, -9, 8, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#9a6714";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.fillStyle = "#fff9e4";
+            ctx.font = "bold 11px Trebuchet MS, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(`+${drop.amount}`, 0, 18);
+            ctx.restore();
+            continue;
+          }
           ctx.fillStyle = drop.kind === "coins" ? "#f2c94c" : "#63a958";
           ctx.beginPath(); ctx.arc(drop.x, drop.y, 11, 0, Math.PI * 2); ctx.fill();
           ctx.strokeStyle = "#fff9e4";
@@ -1416,9 +1518,9 @@ function bulletHitsFarmObstacle(shot) {
         const length = Math.hypot(horizontal, vertical) || 1;
         const playerMoveSpeed = moveSpeed + roundSpeedBonus;
         const nextPlayerX = Math.max(38, Math.min(width - 38, player.x + horizontal / length * playerMoveSpeed * delta));
-        if (!collidesWithFarmObstacle(nextPlayerX, player.y, 18)) player.x = nextPlayerX;
+        if (!collidesWithFarmObstacle(nextPlayerX, player.y, playerRadius)) player.x = nextPlayerX;
         const nextPlayerY = Math.max(42, Math.min(height - 42, player.y + vertical / length * playerMoveSpeed * delta));
-        if (!collidesWithFarmObstacle(player.x, nextPlayerY, 18)) player.y = nextPlayerY;
+        if (!collidesWithFarmObstacle(player.x, nextPlayerY, playerRadius)) player.y = nextPlayerY;
         if (horizontal) player.facing = Math.sign(horizontal);
 
         for (let i = pendingZombieRespawns.length - 1; i >= 0; i--) {
@@ -1527,7 +1629,7 @@ function bulletHitsFarmObstacle(shot) {
         for (let i = goldenDrops.length - 1; i >= 0; i--) {
           const drop = goldenDrops[i];
           if (Math.hypot(drop.x - player.x, drop.y - player.y) >= pickupRadius + 11) continue;
-          if (drop.kind === "coins") {
+          if (drop.kind === "coins" || drop.kind === "gold-package") {
             chickenBalance += drop.amount;
             playTone(790, .1, "triangle");
           } else {
@@ -1658,8 +1760,7 @@ function bulletHitsFarmObstacle(shot) {
         countdownRemaining = 5;
         phase = "countdown";
         syncPauseButton();
-        startButton.hidden = Boolean(weapon);
-        startButton.textContent = "Restart practice";
+        gameOverActions.hidden = true;
         if (weapon) updateWeaponReadout();
       }
 
@@ -1711,6 +1812,33 @@ function bulletHitsFarmObstacle(shot) {
   beginRound();
 }
 
+      function restartOrRespawn() {
+        if (phase === "gameover") {
+          respawnCodeInput.value = "";
+          respawnError.textContent = "";
+          respawnDialog.hidden = false;
+          respawnCodeInput.focus();
+          return;
+        }
+        startGame();
+      }
+
+      function returnToStartMenu() {
+        window.clearTimeout(autoAdvanceTimer);
+        autoAdvanceTimer = null;
+        phase = "menu";
+        keys.clear();
+        resetJoystick();
+        homeMenu.hidden = false;
+        gameOverActions.hidden = true;
+        respawnDialog.hidden = true;
+        upgradePanel.hidden = true;
+        weaponPanel.hidden = true;
+        armorPanel.hidden = true;
+        weaponControls.hidden = true;
+        weaponHelp.hidden = true;
+        syncPauseButton();
+      }
 
 
 
@@ -1760,7 +1888,24 @@ function bulletHitsFarmObstacle(shot) {
 
 
 
-      startButton.addEventListener("click", startGame);
+      startButton.addEventListener("click", restartOrRespawn);
+      restartToMenuButton.addEventListener("click", returnToStartMenu);
+      respawnForm.addEventListener("submit", event => {
+        event.preventDefault();
+        if (respawnCodeInput.value === "6415") {
+          respawnDialog.hidden = true;
+          startGame();
+        } else {
+          respawnError.textContent = "That code is incorrect. Ask Alfred for the right code.";
+          respawnCodeInput.value = "";
+          respawnCodeInput.focus();
+        }
+      });
+      cancelRespawnButton.addEventListener("click", () => {
+        respawnDialog.hidden = true;
+        respawnError.textContent = "";
+        startButton.focus();
+      });
 
 menuStartButton.addEventListener("click", () => {
   console.log("BUTTON CLICKED");
@@ -1774,7 +1919,7 @@ menuStartButton.addEventListener("click", () => {
 
       rerollUpgradesButton.addEventListener("click", () => rerollUpgradeOffers());
       pauseButton.addEventListener("click", togglePause);
-      restartButton.addEventListener("click", startGame);
+      restartButton.addEventListener("click", restartOrRespawn);
       soundEnabledInput.addEventListener("change", () => {
         soundEnabled = soundEnabledInput.checked;
         if (soundEnabled) initializeAudio();
@@ -1864,7 +2009,7 @@ menuStartButton.addEventListener("click", () => {
         }
         if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
           event.preventDefault();
-          if (phase === "ready" || phase === "gameover") startGame();
+          if (phase === "ready") startGame();
           if (phase === "playing") keys.add(event.key);
         }
       });
