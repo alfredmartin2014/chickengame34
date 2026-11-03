@@ -316,6 +316,7 @@
     .respawn-panel input { min-height: 42px; padding: 8px 10px; border: 1px solid rgba(32, 59, 45, .35); border-radius: 5px; color: var(--ink); background: white; font: 700 18px "Trebuchet MS", sans-serif; letter-spacing: 3px; }
     .respawn-panel input:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
     .respawn-error { min-height: 16px; margin: 0; color: #b65b42; font-size: 11px; font-weight: 800; }
+    .respawn-error span { display: block; }
     .respawn-actions { display: flex; justify-content: flex-end; gap: 8px; }
     .game-over-actions { display: flex; align-items: center; gap: 8px; }
 
@@ -517,7 +518,7 @@
         <label for="respawn-code">Respawn code
           <input id="respawn-code" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
         </label>
-        <p class="respawn-error" id="respawn-error" aria-live="assertive"></p>
+        <p class="respawn-error" id="respawn-error" aria-live="assertive"><span id="respawn-error-message"></span><span id="respawn-error-joke"></span></p>
         <div class="respawn-actions">
           <button class="combat-button" id="cancel-respawn" type="button">Cancel</button>
           <button class="start-button" type="submit">Respawn</button>
@@ -559,7 +560,8 @@
       const respawnDialog = document.querySelector("#respawn-dialog");
       const respawnForm = document.querySelector("#respawn-form");
       const respawnCodeInput = document.querySelector("#respawn-code");
-      const respawnError = document.querySelector("#respawn-error");
+      const respawnErrorMessage = document.querySelector("#respawn-error-message");
+      const respawnErrorJoke = document.querySelector("#respawn-error-joke");
       const cancelRespawnButton = document.querySelector("#cancel-respawn");
       const dodgeCountNode = document.querySelector("#dodge-count");
       const soundEnabledInput = document.querySelector("#sound-enabled");
@@ -622,6 +624,8 @@
       let bonusChickenCount = 0;
       let dodgesPerRound = 0;
       let dodgeCharges = 0;
+      let healthRegenerationEnabled = false;
+      let healthRegenerationTimer = 0;
       let health = 3;
       let maxHealth = 3;
       let roundMaxHealthBonus = 0;
@@ -651,14 +655,15 @@
       player.invulnerable = 0;
 
       const upgradeCatalog = [
-        { id: "speed", icon: "🥾", name: "Running shoes", description: "+35 movement speed", price: 6, apply: () => { moveSpeed += 35; addActiveEffect("upgrade-speed", "buff", "Running shoes: +35 speed"); } },
+        { id: "speed", icon: "🥾", name: "Running shoes", description: "+35 movement speed; zombies move 20% slower", price: 6, apply: () => { moveSpeed += 35; zombieSpeedFactor *= .8; addActiveEffect("upgrade-speed", "buff", "Running shoes: +35 speed, zombies 20% slower"); } },
         { id: "range", icon: "🧲", name: "Chicken magnet", description: "+8 catch radius", price: 6, apply: () => { pickupRadius += 8; addActiveEffect("upgrade-range", "buff", "Chicken magnet: +8 catch radius"); } },
         { id: "health", icon: "💚", name: "Extra heart", description: "+1 max health", price: 8, apply: () => { maxHealth++; addActiveEffect("upgrade-health", "buff", "Extra heart: +1 max health"); } },
         { id: "protection", icon: "🧥", name: "Padded jacket", description: "+0.35 seconds protection after a hit", price: 8, apply: () => { hitProtection += .35; addActiveEffect("upgrade-protection", "buff", "Padded jacket: +0.35s protection"); } },
         { id: "corn", icon: "🌽", name: "Pocket corn", description: "Chickens run 15% slower", price: 4, apply: () => { chickenFleeFactor *= .85; addActiveEffect("upgrade-corn", "buff", "Pocket corn: chickens 15% slower"); } },
         { id: "repellent", icon: "🧴", name: "Zombie repellent", description: "Zombie chickens move 18% slower", price: 8, apply: () => { zombieSpeedFactor *= .82; addActiveEffect("upgrade-repellent", "buff", "Repellent: zombies 18% slower"); } },
         { id: "extra-chicken", icon: "🐣", name: "Extra chicken", description: "+1 collectible chicken each round", price: 50, apply: () => { bonusChickenCount++; addActiveEffect("upgrade-chicken", "buff", "Extra chicken: +1 each round"); } },
-        { id: "dodge", icon: "🛡️", name: "Dodge Training", description: "+1 charge each round to null an incoming attack", price: 30, apply: () => { dodgesPerRound++; addActiveEffect("upgrade-dodge", "buff", "Dodge Training: +1 charge each round"); } }
+        { id: "dodge", icon: "🛡️", name: "Dodge Training", description: "+3 charges each round to null incoming attacks", price: 30, apply: () => { dodgesPerRound += 3; addActiveEffect("upgrade-dodge", "buff", "Dodge Training: +3 charges each round"); } },
+        { id: "regeneration", icon: "❤️", name: "Regeneration", description: "Restore 1 health every 15 seconds", price: 40, apply: () => { if (!healthRegenerationEnabled) { healthRegenerationEnabled = true; healthRegenerationTimer = 0; addActiveEffect("upgrade-regeneration", "buff", "Regeneration: +1 health every 15 seconds"); } } }
       ];
 
       const weaponCatalog = {
@@ -770,6 +775,25 @@
         chicken.y = previousY;
       }
 
+      function getZombieSeparation(chicken) {
+        const separationDistance = 64;
+        let x = 0;
+        let y = 0;
+        for (const other of chickens) {
+          if (other === chicken || !other.hostile) continue;
+          const dx = chicken.x - other.x;
+          const dy = chicken.y - other.y;
+          const distance = Math.hypot(dx, dy);
+          if (distance === 0 || distance >= separationDistance) continue;
+          const weight = 1 - distance / separationDistance;
+          x += dx / distance * weight;
+          y += dy / distance * weight;
+        }
+        const magnitude = Math.hypot(x, y);
+        if (magnitude > 1) return { x: x / magnitude, y: y / magnitude };
+        return { x, y };
+      }
+
       function placeChickenOffscreen(chicken) {
         placeChicken(chicken);
         const edge = Math.floor(Math.random() * 4);
@@ -796,6 +820,21 @@
 
       function updateHealthReadout() {
         healthNode.textContent = `${health} / ${maxHealth + roundMaxHealthBonus}`;
+      }
+
+      function updateHealthRegeneration(delta) {
+        if (!healthRegenerationEnabled) return;
+        const healthCap = maxHealth + roundMaxHealthBonus;
+        if (health >= healthCap) {
+          healthRegenerationTimer = 0;
+          return;
+        }
+        healthRegenerationTimer += delta;
+        if (healthRegenerationTimer < 15) return;
+        healthRegenerationTimer -= 15;
+        health = Math.min(healthCap, health + 1);
+        updateHealthReadout();
+        if (health === healthCap) healthRegenerationTimer = 0;
       }
 
       function initializeAudio() {
@@ -1026,7 +1065,7 @@
               chickens.splice(chickens.indexOf(target), 1);
               if (target.hostile) {
                 dropZombieGoldPackage(target);
-                pendingZombieRespawns.push({ timer: 10, zombie: { ...target } });
+                if (!target.boss) pendingZombieRespawns.push({ timer: 10, zombie: { ...target } });
               }
             }
           }
@@ -1496,6 +1535,7 @@ function bulletHitsFarmObstacle(shot) {
 
       function update(delta) {
         elapsed += delta;
+        updateHealthRegeneration(delta);
         if (celebration > 0) celebration = Math.max(0, celebration - delta * 2.3);
         player.invulnerable = Math.max(0, player.invulnerable - delta);
         weaponCooldown = Math.max(0, weaponCooldown - delta);
@@ -1547,7 +1587,13 @@ function bulletHitsFarmObstacle(shot) {
           const dy = chicken.y - player.y;
           const distance = Math.hypot(dx, dy);
           if (chicken.hostile) {
-            chicken.direction = Math.atan2(-dy, -dx) + Math.sin(elapsed * 4 + chicken.flap) * .2;
+            const chaseX = -dx / (distance || 1);
+            const chaseY = -dy / (distance || 1);
+            const separation = getZombieSeparation(chicken);
+            chicken.direction = Math.atan2(
+              chaseY + separation.y * 2.2,
+              chaseX + separation.x * 2.2
+            ) + Math.sin(elapsed * 4 + chicken.flap) * .12;
             chicken.aimAngle = Math.atan2(-dy, -dx);
             if (chicken.gunner || chicken.boss) {
               chicken.shootCooldown -= delta;
@@ -1569,9 +1615,9 @@ function bulletHitsFarmObstacle(shot) {
             }
             const slowZombie = chicken.spiky || chicken.gunner || chicken.boss;
             const baseSpeed = slowZombie ? playerMoveSpeed * .5 : Math.min(145, 75 + round * 8);
-            const waveSpeed = baseSpeed * Math.pow(1.05, round - 1) * zombieSpeedFactor;
+            const waveSpeed = baseSpeed * Math.pow(1.05, round - 1);
             const playerSpeedCap = playerMoveSpeed * (slowZombie ? .9 : .95);
-            const speed = Math.min(waveSpeed, playerSpeedCap);
+            const speed = Math.min(waveSpeed, playerSpeedCap) * zombieSpeedFactor;
             chicken.x += Math.cos(chicken.direction) * speed * delta;
             chicken.y += Math.sin(chicken.direction) * speed * delta;
        } else if (distance < 190) {
@@ -1752,7 +1798,7 @@ function bulletHitsFarmObstacle(shot) {
           chickens.push(chicken);
         }
         if (round % 10 === 0) {
-          const bossHealth = 30 * Math.pow(1.05, round - 10);
+          const bossHealth = 30 * Math.pow(1.05, round - 10) * 1.5;
           const boss = { hostile: true, boss: true, health: bossHealth, maxHealth: bossHealth, shootCooldown: .8 + Math.random() * 1.2 };
           placeChickenOffscreen(boss);
           chickens.push(boss);
@@ -1815,7 +1861,8 @@ function bulletHitsFarmObstacle(shot) {
       function restartOrRespawn() {
         if (phase === "gameover") {
           respawnCodeInput.value = "";
-          respawnError.textContent = "";
+          respawnErrorMessage.textContent = "";
+          respawnErrorJoke.textContent = "";
           respawnDialog.hidden = false;
           respawnCodeInput.focus();
           return;
@@ -1896,14 +1943,16 @@ function bulletHitsFarmObstacle(shot) {
           respawnDialog.hidden = true;
           startGame();
         } else {
-          respawnError.textContent = "That code is incorrect. Ask Alfred for the right code.";
+          respawnErrorMessage.textContent = "That code is incorrect. Ask Alfred for the right code.";
+          respawnErrorJoke.textContent = "u thought lol";
           respawnCodeInput.value = "";
           respawnCodeInput.focus();
         }
       });
       cancelRespawnButton.addEventListener("click", () => {
         respawnDialog.hidden = true;
-        respawnError.textContent = "";
+        respawnErrorMessage.textContent = "";
+        respawnErrorJoke.textContent = "";
         startButton.focus();
       });
 
