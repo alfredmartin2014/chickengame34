@@ -429,6 +429,7 @@
         </section>
         <div class="field-controls" aria-label="Practice controls">
           <button class="field-control-button" id="pause-button" type="button" title="Pause practice" aria-label="Pause practice" disabled>⏸</button>
+          <button class="field-control-button" id="skip-wave-button" type="button" title="Skip wave" aria-label="Skip wave" hidden>⏭</button>
           <button class="field-control-button" id="restart-button" type="button" title="Restart practice" aria-label="Restart practice">↻</button>
           <details class="sound-menu">
             <summary title="Audio settings" aria-label="Audio settings">♫</summary>
@@ -563,6 +564,7 @@
       const gameShell = document.querySelector(".game-shell");
       const fullscreenButton = document.querySelector("#fullscreen-button");
       const pauseButton = document.querySelector("#pause-button");
+      const skipWaveButton = document.querySelector("#skip-wave-button");
       const restartButton = document.querySelector("#restart-button");
       const respawnDialog = document.querySelector("#respawn-dialog");
       const respawnForm = document.querySelector("#respawn-form");
@@ -637,6 +639,7 @@
       let dodgeCharges = 0;
       let healthRegenerationEnabled = false;
       let healthRegenerationTimer = 0;
+      let healthRegenerationStacks = 0;
       let health = 3;
       let maxHealth = 3;
       let roundMaxHealthBonus = 0;
@@ -659,6 +662,7 @@
       let reloadTimer = 0;
       let weaponRoundsPlayed = 0;
       let secretCodeProgress = "";
+      let cheatMode = false;
       let joystickPointerId = null;
       const attackEffects = [];
       const zombieShots = [];
@@ -675,9 +679,9 @@
         { id: "repellent", icon: "🧴", name: "Zombie repellent", description: "Zombie chickens move 18% slower", price: 8, apply: () => { zombieSpeedFactor *= .82; addActiveEffect("upgrade-repellent", "buff", "Repellent: zombies 18% slower"); } },
         { id: "extra-chicken", icon: "🐣", name: "Extra chicken", description: "+1 collectible chicken each round", price: 50, apply: () => { bonusChickenCount++; addActiveEffect("upgrade-chicken", "buff", "Extra chicken: +1 each round"); } },
         { id: "dodge", icon: "🛡️", name: "Dodge Training", description: "+3 charges each round to null incoming attacks", price: 30, apply: () => { dodgesPerRound += 3; addActiveEffect("upgrade-dodge", "buff", "Dodge Training: +3 charges each round"); } },
-        { id: "regeneration", icon: "❤️", name: "Regeneration", description: "Restore 1 health every 15 seconds", price: 40, apply: () => { if (!healthRegenerationEnabled) { healthRegenerationEnabled = true; healthRegenerationTimer = 0; addActiveEffect("upgrade-regeneration", "buff", "Regeneration: +1 health every 15 seconds"); } } },
+        { id: "regeneration", icon: "❤️", name: "Regeneration", description: "Restore health faster with each purchase", price: 40, apply: () => { if (!healthRegenerationEnabled) { healthRegenerationEnabled = true; healthRegenerationTimer = 0; } healthRegenerationStacks++; addActiveEffect("upgrade-regeneration", "buff", "Regeneration: healing speeds up with each purchase"); } },
         { id: "gun-damage", icon: "💥", name: "Weapon damage", description: "+1 damage with your weapon", price: 30, requiresWeapon: true, apply: () => { weapon.damage++; addActiveEffect("upgrade-gun-damage", "buff", `${weapon.name}: +1 damage`); } },
-        { id: "gun-range", icon: "🎯", name: "Weapon range", description: "+25% range with your weapon", price: 25, requiresRangedWeapon: true, apply: () => { weapon.range = Math.min(maximumWeaponRange, Math.round(weapon.range * 1.25)); addActiveEffect("upgrade-gun-range", "buff", `${weapon.name}: +25% range`); } }
+        { id: "gun-range", icon: "🎯", name: "Weapon range", description: "+25% range with your weapon", price: 25, requiresRangedWeapon: true, apply: () => { weapon.range = cheatMode ? Math.round(weapon.range * 1.25) : Math.min(maximumWeaponRange, Math.round(weapon.range * 1.25)); addActiveEffect("upgrade-gun-range", "buff", `${weapon.name}: +25% range`); } }
       ];
 
       const weaponCatalog = {
@@ -851,9 +855,11 @@
           return;
         }
         healthRegenerationTimer += delta;
-        if (healthRegenerationTimer < 15) return;
-        healthRegenerationTimer -= 15;
-        health = Math.min(healthCap, health + 1);
+        const regenerationInterval = 15 / healthRegenerationStacks;
+        if (healthRegenerationTimer < regenerationInterval) return;
+        const restoredHealth = Math.floor(healthRegenerationTimer / regenerationInterval);
+        healthRegenerationTimer -= restoredHealth * regenerationInterval;
+        health = Math.min(healthCap, health + restoredHealth);
         updateHealthReadout();
         if (health === healthCap) healthRegenerationTimer = 0;
       }
@@ -884,6 +890,7 @@
       function syncPauseButton() {
         const canPause = phase === "playing" || phase === "countdown" || phase === "paused";
         pauseButton.disabled = !canPause;
+        skipWaveButton.hidden = !cheatMode || !canPause;
         const paused = phase === "paused";
         const label = paused ? "Resume practice" : "Pause practice";
         pauseButton.textContent = paused ? "▶" : "⏸";
@@ -1145,7 +1152,7 @@
 
       function isUpgradeEligible(offer) {
         if (offer.requiresWeapon && !weapon) return false;
-        if (offer.requiresRangedWeapon && (!weapon || weapon.id === "knife" || weapon.range >= maximumWeaponRange)) return false;
+        if (offer.requiresRangedWeapon && (!weapon || weapon.id === "knife" || (!cheatMode && weapon.range >= maximumWeaponRange))) return false;
         return true;
       }
 
@@ -1159,7 +1166,7 @@
           const button = option.querySelector("[data-upgrade]");
           const lockButton = option.querySelector("[data-lock-upgrade]");
           const offer = activeOffers.find(item => item.id === button.dataset.upgrade);
-          button.disabled = !offer || purchasedOfferIds.has(offer.id) || chickenBalance < getUpgradePrice(offer);
+          button.disabled = !offer || (!cheatMode && purchasedOfferIds.has(offer.id)) || chickenBalance < getUpgradePrice(offer);
           const locked = Boolean(offer && lockedOfferIds.has(offer.id));
           lockButton.disabled = !offer || purchasedOfferIds.has(offer.id);
           lockButton.setAttribute("aria-pressed", String(locked));
@@ -1168,9 +1175,12 @@
         }
         const rerollCost = getUpgradeRerollCost();
         const allOffersLocked = activeOffers.length > 0 && activeOffers.every(offer => lockedOfferIds.has(offer.id));
-        rerollUpgradesButton.disabled = chickenBalance < rerollCost || allOffersLocked;
+        rerollUpgradesButton.hidden = cheatMode;
+        rerollUpgradesButton.disabled = cheatMode || chickenBalance < rerollCost || allOffersLocked;
         rerollUpgradesButton.textContent = `Reroll (${rerollCost} eggs)`;
-        upgradeNoteNode.textContent = allOffersLocked
+        upgradeNoteNode.textContent = cheatMode
+          ? "All upgrades are listed. Buy any, then continue or skip waves."
+          : allOffersLocked
           ? "Unlock an offer before rerolling."
           : affordableCount > 0
           ? "Buy any affordable upgrades, then continue."
@@ -1180,21 +1190,25 @@
       function showUpgradeOffers() {
         purchasedOfferIds.clear();
         const eligibleUpgrades = upgradeCatalog.filter(isUpgradeEligible);
-        const shuffled = [...eligibleUpgrades];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        const lockedOffers = [...lockedOfferIds]
-          .map(id => eligibleUpgrades.find(offer => offer.id === id))
-          .filter(Boolean);
-        const lockedIds = new Set(lockedOffers.map(offer => offer.id));
-        const newOffers = shuffled.filter(offer => !lockedIds.has(offer.id));
-        activeOffers = [...lockedOffers, ...newOffers.slice(0, 3 - lockedOffers.length)];
-        if (round === 1 && chickenBalance > 8 && !activeOffers.some(offer => chickenBalance >= getUpgradePrice(offer))) {
-          const affordableOffer = eligibleUpgrades.find(offer => !lockedIds.has(offer.id) && chickenBalance >= getUpgradePrice(offer));
-          const replaceIndex = activeOffers.findIndex(offer => !lockedOfferIds.has(offer.id));
-          if (affordableOffer && replaceIndex >= 0) activeOffers[replaceIndex] = affordableOffer;
+        if (cheatMode) {
+          activeOffers = eligibleUpgrades;
+        } else {
+          const shuffled = [...eligibleUpgrades];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          const lockedOffers = [...lockedOfferIds]
+            .map(id => eligibleUpgrades.find(offer => offer.id === id))
+            .filter(Boolean);
+          const lockedIds = new Set(lockedOffers.map(offer => offer.id));
+          const newOffers = shuffled.filter(offer => !lockedIds.has(offer.id));
+          activeOffers = [...lockedOffers, ...newOffers.slice(0, 3 - lockedOffers.length)];
+          if (round === 1 && chickenBalance > 8 && !activeOffers.some(offer => chickenBalance >= getUpgradePrice(offer))) {
+            const affordableOffer = eligibleUpgrades.find(offer => !lockedIds.has(offer.id) && chickenBalance >= getUpgradePrice(offer));
+            const replaceIndex = activeOffers.findIndex(offer => !lockedOfferIds.has(offer.id));
+            if (affordableOffer && replaceIndex >= 0) activeOffers[replaceIndex] = affordableOffer;
+          }
         }
         upgradeGridNode.replaceChildren();
 
@@ -1206,7 +1220,7 @@
           button.className = "upgrade-card";
           button.type = "button";
           button.dataset.upgrade = offer.id;
-          button.disabled = purchasedOfferIds.has(offer.id) || chickenBalance < priceAmount;
+          button.disabled = (!cheatMode && purchasedOfferIds.has(offer.id)) || chickenBalance < priceAmount;
 
           const icon = document.createElement("span");
           icon.className = "upgrade-icon";
@@ -1228,6 +1242,7 @@
           lockButton.type = "button";
           lockButton.dataset.lockUpgrade = offer.id;
           lockButton.setAttribute("aria-label", `Lock ${offer.name} in the upgrade list`);
+          lockButton.hidden = cheatMode;
           option.append(button, lockButton);
           upgradeGridNode.append(option);
         }
@@ -1236,7 +1251,7 @@
       }
 
       function rerollUpgradeOffers(free = false) {
-        if (phase !== "upgrade") return;
+        if (phase !== "upgrade" || cheatMode) return;
         if (!free) {
           const cost = getUpgradeRerollCost();
           if (chickenBalance < cost) return;
@@ -1737,27 +1752,7 @@ function bulletHitsFarmObstacle(shot) {
         secondsLeft = Math.max(0, secondsLeft - delta);
         timeNode.textContent = Math.ceil(secondsLeft);
         if (secondsLeft <= 0) {
-          nextRoundNode.textContent = round + 1;
-          startButton.hidden = true;
-          keys.clear();
-          if (round === 4) {
-            phase = "weapon";
-            upgradePanel.hidden = true;
-            weaponPanel.hidden = false;
-            armorPanel.hidden = true;
-            updateWeaponReadout();
-          } else if (round === 14) {
-            phase = "armor";
-            upgradePanel.hidden = true;
-            weaponPanel.hidden = true;
-            armorPanel.hidden = false;
-          } else {
-            phase = "upgrade";
-            upgradePanel.hidden = false;
-            weaponPanel.hidden = true;
-            armorPanel.hidden = true;
-            showUpgradeOffers();
-          }
+          completeRound();
         }
       }
 
@@ -1838,6 +1833,34 @@ function bulletHitsFarmObstacle(shot) {
         if (weapon) updateWeaponReadout();
       }
 
+    function completeRound() {
+      nextRoundNode.textContent = round + 1;
+      secondsLeft = 0;
+      timeNode.textContent = "0";
+      startButton.hidden = true;
+      keys.clear();
+      resetJoystick();
+      if (round === 4) {
+        phase = "weapon";
+        upgradePanel.hidden = true;
+        weaponPanel.hidden = false;
+        armorPanel.hidden = true;
+        updateWeaponReadout();
+      } else if (round === 14) {
+        phase = "armor";
+        upgradePanel.hidden = true;
+        weaponPanel.hidden = true;
+        armorPanel.hidden = false;
+      } else {
+        phase = "upgrade";
+        upgradePanel.hidden = false;
+        weaponPanel.hidden = true;
+        armorPanel.hidden = true;
+        showUpgradeOffers();
+      }
+      syncPauseButton();
+    }
+
     function startGame() {
   console.log("START GAME CLICKED");
 
@@ -1848,6 +1871,10 @@ function bulletHitsFarmObstacle(shot) {
 
   score = 0;
   chickenBalance = 0;
+  cheatMode = false;
+  healthRegenerationEnabled = false;
+  healthRegenerationTimer = 0;
+  healthRegenerationStacks = 0;
   bonusChickenCount = 0;
   dodgesPerRound = 0;
   dodgeCharges = 0;
@@ -1919,6 +1946,7 @@ function bulletHitsFarmObstacle(shot) {
 
       function activateSecretCode() {
         if (phase === "menu" || phase === "gameover" || !respawnDialog.hidden) return;
+        cheatMode = true;
         const selectedWeapon = weaponCatalog.ak47;
         moveSpeed = Math.max(100, moveSpeed + selectedWeapon.speedModifier - (weapon?.speedModifier || 0));
         weapon = { ...selectedWeapon };
@@ -2008,9 +2036,9 @@ function bulletHitsFarmObstacle(shot) {
         chickenBalance -= price;
         updateChickenBalance();
         offer.apply();
-        purchasedOfferIds.add(offer.id);
+        if (!cheatMode) purchasedOfferIds.add(offer.id);
         lockedOfferIds.delete(offer.id);
-        if (offer.id === "gun-range" && weapon.range >= maximumWeaponRange) {
+        if (offer.id === "gun-range" && weapon.range >= maximumWeaponRange && !cheatMode) {
           activeOffers = activeOffers.filter(activeOffer => activeOffer.id !== offer.id);
           const rangeOption = [...upgradeGridNode.querySelectorAll("[data-upgrade]")]
             .find(button => button.dataset.upgrade === offer.id)
@@ -2019,7 +2047,8 @@ function bulletHitsFarmObstacle(shot) {
         }
         updateHealthReadout();
         const unlockedOffers = activeOffers.filter(item => !lockedOfferIds.has(item.id));
-        if (unlockedOffers.length > 0 && unlockedOffers.every(item => purchasedOfferIds.has(item.id))) rerollUpgradeOffers(true);
+        if (cheatMode) refreshUpgradeAvailability();
+        else if (unlockedOffers.length > 0 && unlockedOffers.every(item => purchasedOfferIds.has(item.id))) rerollUpgradeOffers(true);
         else refreshUpgradeAvailability();
       }
 
@@ -2076,6 +2105,9 @@ menuStartButton.addEventListener("click", () => {
 
       rerollUpgradesButton.addEventListener("click", () => rerollUpgradeOffers());
       pauseButton.addEventListener("click", togglePause);
+      skipWaveButton.addEventListener("click", () => {
+        if (cheatMode && ["playing", "countdown", "paused"].includes(phase)) completeRound();
+      });
       restartButton.addEventListener("click", restartOrRespawn);
       soundEnabledInput.addEventListener("change", () => {
         soundEnabled = soundEnabledInput.checked;
