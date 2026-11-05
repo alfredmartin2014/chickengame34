@@ -948,6 +948,7 @@
         { width: 94, height: 82, type: "crate" },
         { width: 150, height: 54, type: "fence" }
       ];
+      const farmBushObstacleType = { width: 88, height: 70, type: "bush" };
       let farmObstacles = [];
       const worldChunks = new Map();
       const visitedWorldChunks = new Set();
@@ -1097,7 +1098,7 @@
         guardian: { apply: () => { hitProtection += .6; moveSpeed = Math.max(100, moveSpeed - 15); }, perk: "+0.6s hit protection", debuff: "-15 movement speed" }
       };
       const skillCatalog = [
-        { id: "battle-focus", icon: "⚔️", name: "Battle Focus", description: "Earn 25% more XP from every action.", cost: 25 },
+        { id: "battle-focus", icon: "⚔️", name: "Battle Focus", description: "Earn 10% more XP from every action.", cost: 25 },
         { id: "swift-boots", icon: "🥾", name: "Swift Boots", description: "+20 movement speed every run.", cost: 40, requires: "battle-focus", apply: () => { moveSpeed += 20; } },
         { id: "tough-farmer", icon: "💚", name: "Tough Farmer", description: "+1 starting heart every run.", cost: 40, requires: "battle-focus", apply: () => { maxHealth++; health++; } },
         { id: "sharp-sword", icon: "⚔️", name: "Sharp Sword", description: "The starter sword reaches farther.", cost: 55, requires: "swift-boots", apply: () => { swordRange += 18; } },
@@ -1189,7 +1190,7 @@
       }
 
       function awardXp(amount) {
-        const multiplier = unlockedSkillIds.has("battle-focus") ? 1.25 : 1;
+        const multiplier = unlockedSkillIds.has("battle-focus") ? 1.1 : 1;
         skillXp += Math.max(1, Math.round(amount * multiplier));
         persistProgression();
       }
@@ -1304,12 +1305,21 @@
         const obstacleCount = 1 + Math.floor(random() * 3);
         for (let i = 0; i < obstacleCount; i++) {
           for (let attempt = 0; attempt < 18; attempt++) {
-            const template = farmObstacleTypes[Math.floor(random() * farmObstacleTypes.length)];
+            const template = random() < .35
+              ? farmBushObstacleType
+              : farmObstacleTypes[Math.floor(random() * farmObstacleTypes.length)];
             const obstacle = {
               ...template,
               x: originX + 80 + random() * (worldChunkSize - template.width - 160),
               y: originY + 80 + random() * (worldChunkSize - template.height - 160)
             };
+            if (obstacle.type === "bush" && random() < .4) {
+              obstacle.stash = {
+                amount: 8 + Math.floor(random() * 9),
+                discovered: false,
+                collected: false
+              };
+            }
             const nearestPlayerX = Math.max(obstacle.x, Math.min(player.x, obstacle.x + obstacle.width));
             const nearestPlayerY = Math.max(obstacle.y, Math.min(player.y, obstacle.y + obstacle.height));
             const nearPlayer = Math.hypot(nearestPlayerX - player.x, nearestPlayerY - player.y) < playerRadius + 40;
@@ -1823,7 +1833,7 @@
         const index = chickens.indexOf(chicken);
         if (index === -1) return;
         score++;
-        awardXp(5);
+        awardXp(2);
         const eggReward = scaleGoldenCoins(5);
         chickenBalance += eggReward;
         updateChickenBalance();
@@ -1840,7 +1850,7 @@
         const perk = chicken.perk;
         const eggReward = perk === "fast" ? 2 : 1;
         score++;
-        awardXp(3);
+        awardXp(1);
         chickenBalance += eggReward;
         updateChickenBalance();
         respawnCollectibleChicken(chicken);
@@ -1859,7 +1869,7 @@
           return;
         }
         score++;
-        awardXp(2);
+        awardXp(1);
         chickenBalance++;
         updateChickenBalance();
         respawnCollectibleChicken(chicken);
@@ -2030,7 +2040,7 @@
         if (index === -1) return;
         chickens.splice(index, 1);
         chicken.frozenTimer = 0;
-        awardXp(6);
+        awardXp(3);
         dropZombieGoldPackage(chicken);
         if (chicken.bossAbility === "split") spawnMutantSplits(chicken);
         if (explosiveEnemiesEnabled) {
@@ -2397,13 +2407,43 @@
         }
       }
 
+      function drawStashMarker(x, y, label) {
+        ctx.fillStyle = "rgba(49,39,24,.25)";
+        ctx.beginPath(); ctx.ellipse(x, y + 12, 19, 6, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#795335";
+        ctx.fillRect(x - 15, y - 10, 30, 22);
+        ctx.fillStyle = "#d6a53f";
+        ctx.fillRect(x - 12, y - 13, 24, 19);
+        ctx.fillStyle = "#f4d875";
+        ctx.fillRect(x - 3, y - 12, 6, 18);
+        ctx.fillStyle = "#fff9e4";
+        ctx.font = "bold 11px Trebuchet MS, sans-serif";
+        ctx.textAlign = "center";
+        ctx.strokeStyle = "rgba(32,59,45,.85)";
+        ctx.lineWidth = 3;
+        ctx.strokeText(label, x, y - 24);
+        ctx.fillText(label, x, y - 24);
+      }
+
       function drawFarmObstacles() {
         for (const obstacle of farmObstacles) {
           ctx.save();
           ctx.shadowColor = "rgba(35,47,29,.28)";
           ctx.shadowBlur = 8;
           ctx.shadowOffsetY = 5;
-          if (obstacle.type === "hay") {
+          if (obstacle.type === "bush") {
+            ctx.fillStyle = "#356b3d";
+            ctx.beginPath();
+            ctx.ellipse(obstacle.x + obstacle.width * .28, obstacle.y + obstacle.height * .63, obstacle.width * .3, obstacle.height * .34, -.2, 0, Math.PI * 2);
+            ctx.ellipse(obstacle.x + obstacle.width * .55, obstacle.y + obstacle.height * .43, obstacle.width * .34, obstacle.height * .39, .1, 0, Math.PI * 2);
+            ctx.ellipse(obstacle.x + obstacle.width * .78, obstacle.y + obstacle.height * .62, obstacle.width * .27, obstacle.height * .33, .2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "rgba(145,190,92,.42)";
+            ctx.beginPath();
+            ctx.arc(obstacle.x + obstacle.width * .43, obstacle.y + obstacle.height * .35, 10, 0, Math.PI * 2);
+            ctx.arc(obstacle.x + obstacle.width * .72, obstacle.y + obstacle.height * .48, 7, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (obstacle.type === "hay") {
             ctx.fillStyle = "#d5a64e";
             ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
             ctx.strokeStyle = "#8a6230";
@@ -2451,6 +2491,9 @@
             ctx.strokeRect(obstacle.x, obstacle.y + obstacle.height - 20, obstacle.width, 12);
           }
           ctx.restore();
+          if (obstacle.stash?.discovered && !obstacle.stash.collected) {
+            drawStashMarker(obstacle.x + obstacle.width / 2, obstacle.y - 7, "BUSH STASH");
+          }
         }
       }
 
@@ -2780,21 +2823,7 @@
           const cache = chunk.cache;
           if (!cache) continue;
           if (!cache.discovered || cache.collected) continue;
-          ctx.fillStyle = "rgba(49,39,24,.25)";
-          ctx.beginPath(); ctx.ellipse(cache.x, cache.y + 12, 19, 6, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = "#795335";
-          ctx.fillRect(cache.x - 15, cache.y - 10, 30, 22);
-          ctx.fillStyle = "#d6a53f";
-          ctx.fillRect(cache.x - 12, cache.y - 13, 24, 19);
-          ctx.fillStyle = "#f4d875";
-          ctx.fillRect(cache.x - 3, cache.y - 12, 6, 18);
-          ctx.fillStyle = "#fff9e4";
-          ctx.font = "bold 11px Trebuchet MS, sans-serif";
-          ctx.textAlign = "center";
-          ctx.strokeStyle = "rgba(32,59,45,.85)";
-          ctx.lineWidth = 3;
-          ctx.strokeText("HIDDEN STASH", cache.x, cache.y - 24);
-          ctx.fillText("HIDDEN STASH", cache.x, cache.y - 24);
+          drawStashMarker(cache.x, cache.y, "HIDDEN STASH");
         }
         for (const chicken of chickens) {
           if (Math.abs(chicken.x - player.x) <= width && Math.abs(chicken.y - player.y) <= height) drawChicken(chicken);
@@ -3184,17 +3213,33 @@ function bulletHitsFarmObstacle(shot) {
             showRewardToast("SECRET CLEARING", "A hidden trail leads to a stash nearby.");
           }
           const cache = chunk.cache;
-          if (!cache) continue;
-          if (cache.collected) continue;
-          const distance = Math.hypot(cache.x - player.x, cache.y - player.y);
-          if (distance < 78) cache.discovered = true;
-          if (distance >= 30) continue;
-          cache.collected = true;
-          chickenBalance += cache.amount;
-          awardXp(10);
-          updateChickenBalance();
-          playTone(790, .12, "triangle");
-          showRewardToast("HIDDEN STASH FOUND", `+${cache.amount} eggs and 10 XP.`);
+          if (cache && !cache.collected) {
+            const distance = Math.hypot(cache.x - player.x, cache.y - player.y);
+            if (distance < 78) cache.discovered = true;
+            if (distance < 30) {
+              cache.collected = true;
+              chickenBalance += cache.amount;
+              awardXp(4);
+              updateChickenBalance();
+              playTone(790, .12, "triangle");
+              showRewardToast("HIDDEN STASH FOUND", `+${cache.amount} eggs and 4 XP.`);
+            }
+          }
+          for (const obstacle of chunk.obstacles) {
+            const stash = obstacle.stash;
+            if (!stash || stash.collected) continue;
+            const nearestX = Math.max(obstacle.x, Math.min(player.x, obstacle.x + obstacle.width));
+            const nearestY = Math.max(obstacle.y, Math.min(player.y, obstacle.y + obstacle.height));
+            const distance = Math.hypot(player.x - nearestX, player.y - nearestY);
+            if (distance < 110) stash.discovered = true;
+            if (distance >= 38) continue;
+            stash.collected = true;
+            chickenBalance += stash.amount;
+            awardXp(4);
+            updateChickenBalance();
+            playTone(790, .12, "triangle");
+            showRewardToast("BUSH STASH FOUND", `+${stash.amount} eggs and 4 XP.`);
+          }
         }
         for (let i = goldenDrops.length - 1; i >= 0; i--) {
           const drop = goldenDrops[i];
@@ -3406,7 +3451,7 @@ function bulletHitsFarmObstacle(shot) {
       }
 
     function completeRound() {
-      awardXp(10);
+      awardXp(5);
       nextRoundNode.textContent = round + 1;
       secondsLeft = 0;
       timeNode.textContent = "0";
