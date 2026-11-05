@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chicken Chase | Maths Practice</title>
+  <title>Chicken Chase</title>
   <style>
     :root {
       color-scheme: light;
@@ -662,22 +662,22 @@
       <div class="round-tag" aria-label="Current wave"><span class="round-label">WAVE</span><span class="round-number" id="round">1</span></div>
     </header>
 
-    <button id="hideUIButton">Hide Study Aids</button>
+    <button id="hideUIButton">Show effects</button>
 
-    <section class="game-shell" aria-label="Chicken Chase maths practice">
+    <section class="game-shell" aria-label="Chicken Chase survival game">
       <div class="field-wrap">
-        <canvas id="field" width="960" height="540" aria-label="Chicken Chase interactive maths practice area"></canvas>
+        <canvas id="field" width="960" height="540" aria-label="Chicken Chase game field"></canvas>
         <div class="reward-toast" id="reward-toast" role="status" aria-live="polite" hidden>
           <strong id="reward-toast-title"></strong>
           <span id="reward-toast-message"></span>
         </div>
         <section class="home-menu" id="home-menu" aria-label="Chicken Chase welcome">
           <div class="home-menu-panel">
-            <p class="home-menu-kicker">CHICKEN CHASE · MATHS PRACTICE</p>
+            <p class="home-menu-kicker">CHICKEN CHASE · SURVIVAL GAME</p>
             <h2>The flock needs you.</h2>
             <div class="home-menu-hook" aria-hidden="true"><span>☄️</span><span>🧑‍🌾</span><span>🐔</span></div>
             <p class="home-menu-story">A meteor has poisoned Cloverfield's water. Guide Rowan, protect the farm, and rescue the chickens.</p>
-            <label class="skin-control" for="farmer-skin">Learner theme
+            <label class="skin-control" for="farmer-skin">Farmer outfit
               <select id="farmer-skin">
                 <option value="classic">Classic</option>
                 <option value="orchard">Orchard</option>
@@ -719,7 +719,7 @@
               <p id="intro-caption">Farmer Rowan inherited a little farm and a lively flock from his grandmother. He promised to care for every chicken.</p>
             </div>
             <div class="intro-mission"><strong>YOUR MISSION</strong><span>Rescue the flock · Protect the farm · Find a cure</span></div>
-            <div class="intro-game-preview" role="img" aria-label="Gameplay preview: Rowan chases an infected chicken, collects an egg, and earns an upgrade">
+            <div class="intro-game-preview" role="img" aria-label="Gameplay preview: Rowan fights an infected chicken, collects an egg, and earns an upgrade">
               <span class="preview-farmer" aria-hidden="true">🧑‍🌾</span>
               <span aria-hidden="true">→</span>
               <span class="preview-chicken" aria-hidden="true">🧟🐔</span>
@@ -741,11 +741,11 @@
             </div>
           </div>
         </section>
-        <div class="field-controls" aria-label="Practice controls">
-          <button class="field-control-button" id="pause-button" type="button" title="Pause practice" aria-label="Pause practice" disabled>⏸</button>
+        <div class="field-controls" aria-label="Game controls">
+          <button class="field-control-button" id="pause-button" type="button" title="Pause game" aria-label="Pause game" disabled>⏸</button>
           <button class="field-control-button" id="field-skill-tree" type="button" title="Open skill tree" aria-label="Open skill tree">✦</button>
           <button class="field-control-button skip-wave-button" id="skip-wave-button" type="button" title="Skip wave" aria-label="Skip wave" hidden>⏭ Skip wave</button>
-          <button class="field-control-button" id="restart-button" type="button" title="Restart practice" aria-label="Restart practice">↻</button>
+          <button class="field-control-button" id="restart-button" type="button" title="Restart game" aria-label="Restart game">↻</button>
           <details class="sound-menu">
             <summary title="Audio settings" aria-label="Audio settings">♫</summary>
             <div class="sound-popover">
@@ -755,21 +755,21 @@
           </details>
         </div>
         <button class="fullscreen-button" id="fullscreen-button" type="button" title="Enter fullscreen" aria-label="Enter fullscreen">⛶</button>
-        <aside class="active-effects-panel" id="active-effects-panel" aria-label="Current study aids" hidden>
-          <p class="active-effects-heading">STUDY AIDS</p>
+        <aside class="active-effects-panel" id="active-effects-panel" aria-label="Current effects" hidden>
+          <p class="active-effects-heading">ACTIVE EFFECTS</p>
           <ul class="active-effects-list" id="active-effects-list"></ul>
         </aside>
         <div class="sword-status" aria-label="Sword auto-swings at collectible chickens only; zombies are safe">⚔ SWORD AUTO-SWINGS AT CHICKENS ONLY · ZOMBIES ARE SAFE</div>
-        <div class="dodge-counter" title="Hints available" aria-label="Hints available" aria-live="polite"><span aria-hidden="true">🛡</span><span id="dodge-count">0</span></div>
+        <div class="dodge-counter" title="Dodge charges" aria-label="Dodge charges" aria-live="polite"><span aria-hidden="true">🛡</span><span id="dodge-count">0</span></div>
         <div class="touch-joystick" id="touch-joystick" hidden>
-          <div class="joystick-ring" id="joystick-ring" role="application" aria-label="Practice navigation control"><div class="joystick-knob" id="joystick-knob"></div></div>
+          <div class="joystick-ring" id="joystick-ring" role="application" aria-label="Movement control"><div class="joystick-knob" id="joystick-knob"></div></div>
         </div>
       </div>
       <div class="hud">
         <div class="stats" aria-live="polite">
           <div class="stat"><span class="gold-stack-icon" aria-hidden="true"><i></i><i></i><i></i></span><div><div class="stat-label">GOLD</div><div class="stat-value" id="score">0</div></div></div>
           <div class="stat"><span class="stat-icon" aria-hidden="true">⏱</span><div><div class="stat-label">TIME</div><div class="stat-value" id="time">45</div></div></div>
-          <div class="stat"><span class="stat-icon" aria-hidden="true">✓</span><div><div class="stat-label">TRIES</div><div class="stat-value" id="health">3 / 3</div></div></div>
+          <div class="stat"><span class="stat-icon" aria-hidden="true">♥</span><div><div class="stat-label">HEALTH</div><div class="stat-value" id="health">3 / 3</div></div></div>
           <div class="stat xp-stat"><span class="stat-icon" aria-hidden="true">✦</span><div><div class="stat-label">XP</div><div class="stat-value" id="xp">0</div></div></div>
         </div>
         <div class="game-over-actions" id="game-over-actions" hidden>
@@ -777,9 +777,9 @@
           <button class="combat-button" id="restart-to-menu" type="button">Restart</button>
         </div>
         <div class="weapon-controls" id="weapon-controls" hidden>
-          <div class="weapon-readout"><span class="weapon-name" id="weapon-name">Practice tool</span><span class="ammo-readout" id="ammo-readout">--</span></div>
-          <button class="combat-button" id="attack-button" type="button" title="Try a question (Space)">Try</button>
-          <button class="combat-button" id="reload-button" type="button" title="Reset practice (R)">Reset</button>
+          <div class="weapon-readout"><span class="weapon-name" id="weapon-name">Weapon</span><span class="ammo-readout" id="ammo-readout">--</span></div>
+          <button class="combat-button" id="attack-button" type="button" title="Fire weapon (Space)">Fire</button>
+          <button class="combat-button" id="reload-button" type="button" title="Reload weapon (R)">Reload</button>
         </div>
       </div>
       <section class="upgrade-panel" id="upgrade-panel" aria-labelledby="upgrade-title" hidden>
@@ -813,7 +813,7 @@
             <span class="upgrade-copy"><strong>AK-47</strong><span class="weapon-perk">Perk: rapid automatic fire</span><span class="weapon-debuff">Debuff: -20 speed, reload often</span><small>30 rounds + 90 reserve</small></span>
           </button>
         </div>
-        <p class="upgrade-note">Hold Space or Attack to fire. Reload with R or the Reload button.</p>
+        <p class="upgrade-note">Hold Space or Fire to shoot. Reload with R or the Reload button.</p>
       </section>
       <section class="upgrade-panel" id="armor-panel" aria-labelledby="armor-title" hidden>
         <div class="upgrade-heading">
@@ -855,9 +855,9 @@
       <div class="controls" aria-label="Navigate with arrow keys">
         <span class="key-group" aria-hidden="true"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
         <span>ARROW KEYS TO NAVIGATE</span>
-        <span id="weapon-help" hidden>SPACE TO TRY · R TO RESET</span>
+        <span id="weapon-help" hidden>SPACE TO FIRE · R TO RELOAD</span>
       </div>
-      <div class="credit">Build your number sense, one step at a time.</div>
+      <div class="credit">Rescue the flock. Defend the farm.</div>
     </footer>
   </main>
 
@@ -1097,9 +1097,9 @@
         guardian: { apply: () => { hitProtection += .6; moveSpeed = Math.max(100, moveSpeed - 15); }, perk: "+0.6s hit protection", debuff: "-15 movement speed" }
       };
       const skillCatalog = [
-        { id: "quick-study", icon: "📘", name: "Quick Study", description: "Earn 25% more XP from every action.", cost: 25 },
-        { id: "swift-boots", icon: "🥾", name: "Swift Boots", description: "+20 movement speed every run.", cost: 40, requires: "quick-study", apply: () => { moveSpeed += 20; } },
-        { id: "tough-farmer", icon: "💚", name: "Tough Farmer", description: "+1 starting heart every run.", cost: 40, requires: "quick-study", apply: () => { maxHealth++; health++; } },
+        { id: "battle-focus", icon: "⚔️", name: "Battle Focus", description: "Earn 25% more XP from every action.", cost: 25 },
+        { id: "swift-boots", icon: "🥾", name: "Swift Boots", description: "+20 movement speed every run.", cost: 40, requires: "battle-focus", apply: () => { moveSpeed += 20; } },
+        { id: "tough-farmer", icon: "💚", name: "Tough Farmer", description: "+1 starting heart every run.", cost: 40, requires: "battle-focus", apply: () => { maxHealth++; health++; } },
         { id: "sharp-sword", icon: "⚔️", name: "Sharp Sword", description: "The starter sword reaches farther.", cost: 55, requires: "swift-boots", apply: () => { swordRange += 18; } },
         { id: "extra-flock", icon: "🐣", name: "Extra Flock", description: "+1 collectible chicken each round.", cost: 55, requires: "tough-farmer", apply: () => { bonusChickenCount++; } }
       ];
@@ -1121,6 +1121,7 @@
           }
           skillXp = progression.xp;
           const savedSkills = new Set(progression.unlockedSkills);
+          if (savedSkills.has("quick-study")) savedSkills.add("battle-focus");
           for (const skill of skillCatalog) {
             if (savedSkills.has(skill.id) && (!skill.requires || unlockedSkillIds.has(skill.requires))) {
               unlockedSkillIds.add(skill.id);
@@ -1188,7 +1189,7 @@
       }
 
       function awardXp(amount) {
-        const multiplier = unlockedSkillIds.has("quick-study") ? 1.25 : 1;
+        const multiplier = unlockedSkillIds.has("battle-focus") ? 1.25 : 1;
         skillXp += Math.max(1, Math.round(amount * multiplier));
         persistProgression();
       }
@@ -1580,7 +1581,7 @@
         skipWaveButton.title = bossWave ? "Boss waves cannot be skipped" : "Skip wave";
         skipWaveButton.setAttribute("aria-label", skipWaveButton.title);
         const paused = phase === "paused";
-        const label = paused ? "Resume practice" : "Pause practice";
+        const label = paused ? "Resume game" : "Pause game";
         pauseButton.textContent = paused ? "▶" : "⏸";
         pauseButton.title = label;
         pauseButton.setAttribute("aria-label", label);
@@ -2959,14 +2960,14 @@
         vignette.addColorStop(1, "rgba(23,43,30,.19)");
         ctx.fillStyle = vignette;
         ctx.fillRect(0, 0, width, height);
-        if (phase === "ready") drawOverlay("Ready to practise?", "START YOUR NUMBER CHALLENGE WHEN YOU'RE READY");
+        if (phase === "ready") drawOverlay("Ready to play?", "START YOUR RUN WHEN YOU'RE READY");
         if (phase === "countdown") drawOverlay("Get ready!", String(Math.ceil(countdownRemaining)));
-        if (phase === "paused") drawOverlay("Practice paused", "YOUR SESSION IS PAUSED");
+        if (phase === "paused") drawOverlay("Game paused", "YOUR RUN IS PAUSED");
         if (phase === "upgrade") drawOverlay("Round complete!", "CHOOSE AN UPGRADE BELOW");
         if (phase === "weapon") drawOverlay("Pick your weapon!", "CHOOSE YOUR LOADOUT FOR ROUND 5");
         if (phase === "armor") drawOverlay("Choose your armor!", "PICK YOUR ARMOR FOR ROUND 15");
         if (phase === "dying") drawOverlay("The infection takes hold...", "ROWAN STAGGERS, TURNS, AND FALLS");
-        if (phase === "gameover") drawOverlay("Practice complete!", `${score} points earned across ${round} sets`);
+        if (phase === "gameover") drawOverlay("Run complete!", `${score} gold collected across ${round} waves`);
         if (celebration > 0) {
           ctx.fillStyle = `rgba(255,249,228,${celebration * .3})`;
           ctx.fillRect(19, 19, width - 38, height - 38);
@@ -3702,7 +3703,7 @@ function bulletHitsFarmObstacle(shot) {
   const hidden = activeEffectsPanel.hidden;
 
   activeEffectsPanel.hidden = !hidden;
-  hideUIButton.textContent = hidden ? "Hide Study Aids" : "Show Study Aids";
+  hideUIButton.textContent = hidden ? "Hide effects" : "Show effects";
 });
 
 
