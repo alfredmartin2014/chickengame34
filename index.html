@@ -399,6 +399,7 @@
     .active-effect-buff { color: var(--green); }
     .active-effect-debuff { color: #b65b42; }
     .dodge-counter { position: absolute; z-index: 3; right: 10px; bottom: 10px; display: flex; min-width: 58px; height: 38px; align-items: center; justify-content: center; gap: 7px; padding: 0 10px; border: 1px solid rgba(32, 59, 45, .55); border-radius: 6px; color: #fffdf5; background: rgba(32, 59, 45, .86); font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .sword-status { position: absolute; z-index: 3; top: 56px; left: 10px; max-width: min(250px, calc(100% - 20px)); padding: 6px 9px; border: 1px solid rgba(255, 249, 228, .8); border-radius: 6px; color: #fff9e4; background: rgba(32, 59, 45, .88); box-shadow: 0 2px 6px rgba(0, 0, 0, .2); font-size: 10px; font-weight: 900; line-height: 1.3; pointer-events: none; }
 
     .game-shell:fullscreen {
       display: flex;
@@ -711,6 +712,7 @@
           <p class="active-effects-heading">STUDY AIDS</p>
           <ul class="active-effects-list" id="active-effects-list"></ul>
         </aside>
+        <div class="sword-status" aria-label="Sword auto-swings at collectible chickens only; zombies are safe">⚔ SWORD AUTO-SWINGS AT CHICKENS ONLY · ZOMBIES ARE SAFE</div>
         <div class="dodge-counter" title="Hints available" aria-label="Hints available" aria-live="polite"><span aria-hidden="true">🛡</span><span id="dodge-count">0</span></div>
         <div class="touch-joystick" id="touch-joystick" hidden>
           <div class="joystick-ring" id="joystick-ring" role="application" aria-label="Practice navigation control"><div class="joystick-knob" id="joystick-knob"></div></div>
@@ -946,6 +948,8 @@
       let currentIntroScene = -1;
       let weapon = null;
       let weaponCooldown = 0;
+      let swordCooldown = 0;
+      let swordSwing = null;
       let reloadTimer = 0;
       let weaponRoundsPlayed = 0;
       let secretCodeProgress = "";
@@ -1213,6 +1217,8 @@
         if (phase === "paused") {
           countdownRemaining = 5;
           phase = "countdown";
+          swordCooldown = 0;
+          swordSwing = null;
         } else if (phase === "playing" || phase === "countdown") {
           phase = "paused";
           keys.clear();
@@ -1288,9 +1294,14 @@
 
       function respawnCollectibleChicken(chicken) {
         chicken.golden = Math.random() < .05;
+        const perkRoll = Math.random();
+        chicken.perk = chicken.golden ? null : perkRoll < .2 ? "fast" : perkRoll < .4 ? "zigzag" : null;
         if (chicken.golden) {
           chicken.health = 4;
           chicken.maxHealth = 4;
+        } else if (chicken.perk) {
+          chicken.health = 2;
+          chicken.maxHealth = 2;
         } else {
           delete chicken.health;
           delete chicken.maxHealth;
@@ -1310,6 +1321,60 @@
         celebration = 1;
         showRewardToast("GOLDEN CHICKEN!", `+${eggReward} eggs and bonus loot.`);
         playTone(920, .16, "triangle");
+      }
+
+      function defeatPerkChicken(chicken) {
+        const index = chickens.indexOf(chicken);
+        if (index === -1) return;
+        const perk = chicken.perk;
+        const eggReward = perk === "fast" ? 2 : 1;
+        score++;
+        chickenBalance += eggReward;
+        updateChickenBalance();
+        respawnCollectibleChicken(chicken);
+        celebration = 1;
+        showRewardToast(perk === "fast" ? "FAST CHICKEN!" : "ZIGZAG CHICKEN!", `+${eggReward} ${eggReward === 1 ? "egg" : "eggs"}.`);
+        playTone(720, .1, "triangle");
+      }
+
+      function collectChicken(chicken) {
+        if (chicken.golden) {
+          defeatGoldenChicken(chicken);
+          return;
+        }
+        if (chicken.perk) {
+          defeatPerkChicken(chicken);
+          return;
+        }
+        score++;
+        chickenBalance++;
+        updateChickenBalance();
+        respawnCollectibleChicken(chicken);
+        celebration = 1;
+        playTone(620, .075, "sine");
+      }
+
+      function updateSword(delta) {
+        swordCooldown = Math.max(0, swordCooldown - delta);
+        if (swordSwing) {
+          swordSwing.elapsed += delta;
+          if (swordSwing.elapsed >= .32) swordSwing = null;
+        }
+        if (swordCooldown > 0) return;
+        let target = null;
+        let nearestDistance = 58;
+        for (const chicken of chickens) {
+          if (chicken.hostile) continue;
+          const distance = Math.hypot(chicken.x - player.x, chicken.y - player.y);
+          if (distance <= nearestDistance) {
+            target = chicken;
+            nearestDistance = distance;
+          }
+        }
+        if (!target) return;
+        swordCooldown = .48;
+        swordSwing = { angle: Math.atan2(target.y - player.y, target.x - player.x), elapsed: 0 };
+        collectChicken(target);
       }
 
       function resetJoystick() {
@@ -1412,7 +1477,7 @@
         let target = null;
         let nearestDistance = weapon.range;
         for (const chicken of chickens) {
-          if (!chicken.hostile && !chicken.golden) continue;
+          if (!chicken.hostile && !chicken.golden && !chicken.perk) continue;
           const distance = Math.hypot(chicken.x - player.x, chicken.y - player.y);
           if (distance <= nearestDistance) {
             target = chicken;
@@ -1427,6 +1492,8 @@
           if (target.health <= 0) {
             if (target.golden) {
               defeatGoldenChicken(target);
+            } else if (target.perk) {
+              defeatPerkChicken(target);
             } else if (!target.hostile) {
               chickens.splice(chickens.indexOf(target), 1);
             }
@@ -1719,7 +1786,8 @@
       function drawChicken(chicken) {
         const bob = Math.sin(chicken.flap) * 1.7;
         const skin = chickenSkinPalettes[chickenSkin];
-        const featherColor = chicken.golden ? "#f2c94c" : chicken.hostile ? "#a3ae78" : skin.body;
+        const featherColor = chicken.golden ? "#f2c94c" : chicken.hostile ? "#a3ae78" : chicken.perk === "fast" ? "#f2c94c" : chicken.perk === "zigzag" ? "#8bd0e8" : skin.body;
+        const wingColor = chicken.hostile ? "#778656" : chicken.golden ? "#d2a51f" : chicken.perk === "fast" ? "#e97852" : chicken.perk === "zigzag" ? "#6862a8" : skin.wing;
         ctx.save();
         ctx.translate(chicken.x, chicken.y + bob);
         if (chicken.boss) ctx.scale(1.8, 1.8);
@@ -1746,7 +1814,7 @@
         ctx.stroke();
         ctx.fillStyle = featherColor;
         ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = chicken.hostile ? "#778656" : chicken.golden ? "#d2a51f" : skin.wing;
+        ctx.fillStyle = wingColor;
         ctx.beginPath(); ctx.ellipse(-5, 1, 7, 5, -.3, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = featherColor;
         ctx.beginPath(); ctx.arc(10, -8, 8, 0, Math.PI * 2); ctx.fill();
@@ -1756,17 +1824,43 @@
         ctx.beginPath(); ctx.moveTo(17, -8); ctx.lineTo(24, -5); ctx.lineTo(17, -3); ctx.closePath(); ctx.fill();
         ctx.fillStyle = chicken.hostile ? "#e2504a" : chicken.golden ? "#493a31" : "#263b30";
         ctx.beginPath(); ctx.arc(12, -10, chicken.hostile ? 2.2 : 1.5, 0, Math.PI * 2); ctx.fill();
-        if (chicken.hostile || chicken.golden) {
+        if (chicken.hostile || chicken.golden || chicken.perk) {
           const barWidth = chicken.boss ? 40 : 32;
           const healthRatio = Math.max(0, chicken.health / chicken.maxHealth);
           ctx.fillStyle = "#493a31";
-          ctx.fillRect(-barWidth / 2, -30, barWidth, 4);
+          ctx.fillRect(-barWidth / 2, -36, barWidth, 4);
           ctx.fillStyle = chicken.golden ? "#f2c94c" : "#e2504a";
-          ctx.fillRect(-barWidth / 2, -30, barWidth * healthRatio, 4);
-          ctx.fillStyle = "#fff9e4";
+          ctx.fillRect(-barWidth / 2, -36, barWidth * healthRatio, 4);
+          if (!chicken.perk) {
+            ctx.fillStyle = "#fff9e4";
+            ctx.font = "bold 9px Trebuchet MS, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(chicken.golden ? "GOLD" : chicken.boss ? "BOSS" : "!", 0, -42);
+          }
+        }
+        if (chicken.perk) {
+          ctx.save();
+          ctx.strokeStyle = chicken.perk === "fast" ? "#e97852" : "#6862a8";
+          ctx.lineWidth = 2.5;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          if (chicken.perk === "fast") {
+            ctx.moveTo(-22, -5); ctx.lineTo(-16, -5);
+            ctx.moveTo(-24, 1); ctx.lineTo(-17, 1);
+            ctx.moveTo(-21, 7); ctx.lineTo(-15, 7);
+          } else {
+            ctx.moveTo(-7, -13); ctx.lineTo(-2, -19); ctx.lineTo(3, -13); ctx.lineTo(8, -19);
+          }
+          ctx.stroke();
+          ctx.restore();
           ctx.font = "bold 9px Trebuchet MS, sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText(chicken.golden ? "GOLD" : chicken.boss ? "BOSS" : "!", 0, -36);
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = "rgba(32,59,45,.85)";
+          ctx.fillStyle = chicken.perk === "fast" ? "#d9ee78" : "#fff9e4";
+          const label = chicken.perk === "fast" ? "FAST 2 GOLD" : "ZIGZAG 1 GOLD";
+          ctx.strokeText(label, 0, -43);
+          ctx.fillText(label, 0, -43);
         }
         if (chicken.gunner || chicken.boss) {
           ctx.save();
@@ -1823,6 +1917,46 @@
         } else {
           ctx.beginPath(); ctx.arc(player.facing > 0 ? 4 : -4, -9, 1.5, 0, Math.PI * 2); ctx.fill();
         }
+        const swordBaseAngle = player.facing > 0 ? 0 : Math.PI;
+        const swordProgress = swordSwing ? Math.min(1, swordSwing.elapsed / .32) : 0;
+        const swordAngle = swordSwing
+          ? swordSwing.angle + Math.sin(swordProgress * Math.PI) * .75 - .75
+          : swordBaseAngle;
+        ctx.save();
+        ctx.translate(9 * player.facing, 4);
+        ctx.rotate(swordAngle);
+        if (swordSwing) {
+          ctx.globalAlpha = 1 - swordProgress * .55;
+          ctx.strokeStyle = "#fff2a1";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, 38, -.8, .8);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = "#493a31";
+        ctx.lineWidth = 5;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-2, 0);
+        ctx.lineTo(6, 0);
+        ctx.stroke();
+        ctx.strokeStyle = "#d9b85f";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(7, -6);
+        ctx.lineTo(7, 6);
+        ctx.stroke();
+        ctx.fillStyle = "#dce5e4";
+        ctx.strokeStyle = "#493a31";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(8, -4);
+        ctx.lineTo(39, 0);
+        ctx.lineTo(8, 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
         ctx.restore();
       }
 
@@ -2019,28 +2153,31 @@ function bulletHitsFarmObstacle(shot) {
             const baseSpeed = slowZombie ? playerMoveSpeed * .5 : Math.min(145, 75 + round * 8);
             const waveSpeed = baseSpeed * Math.pow(1.05, round - 1);
             const playerSpeedCap = playerMoveSpeed * (slowZombie ? .9 : .95);
-            const speed = Math.min(waveSpeed, playerSpeedCap) * zombieSpeedFactor;
+            const speed = Math.max(playerMoveSpeed * .5, Math.min(waveSpeed, playerSpeedCap) * zombieSpeedFactor);
             chicken.x += Math.cos(chicken.direction) * speed * delta;
             chicken.y += Math.sin(chicken.direction) * speed * delta;
-       } else if (distance < 190) {
-  // Harder-to-catch chickens:
-  // Keep the same movement speed, but start fleeing earlier
-  // and steer more directly away from the player.
-  const strength = (190 - distance) / 190;
-
-  const awayAngle = Math.atan2(dy, dx);
-
-  // Stronger steering near the player, without increasing speed.
-  chicken.direction =
-    awayAngle +
-    Math.sin(elapsed * chicken.wander + chicken.flap) * (0.16 + strength * 0.12);
-
-  const chickenSpeed = (55 + strength * 75) * chickenFleeFactor;
-
-  chicken.x += Math.cos(chicken.direction) * chickenSpeed * delta;
-  chicken.y += Math.sin(chicken.direction) * chickenSpeed * delta;
-} else {
-
+          } else if (chicken.perk === "fast") {
+            chicken.direction = Math.atan2(dy, dx);
+            const chickenSpeed = playerMoveSpeed * .95;
+            chicken.x += Math.cos(chicken.direction) * chickenSpeed * delta;
+            chicken.y += Math.sin(chicken.direction) * chickenSpeed * delta;
+          } else if (chicken.perk === "zigzag") {
+            const strength = Math.max(0, (190 - distance) / 190);
+            const awayAngle = Math.atan2(dy, dx);
+            chicken.direction = awayAngle + Math.sin(elapsed * 8 + chicken.flap) * .85;
+            const chickenSpeed = (distance < 190 ? 55 + strength * 75 : 20) * chickenFleeFactor;
+            chicken.x += Math.cos(chicken.direction) * chickenSpeed * delta;
+            chicken.y += Math.sin(chicken.direction) * chickenSpeed * delta;
+          } else if (distance < 190) {
+            const strength = (190 - distance) / 190;
+            const awayAngle = Math.atan2(dy, dx);
+            chicken.direction =
+              awayAngle +
+              Math.sin(elapsed * chicken.wander + chicken.flap) * (0.16 + strength * 0.12);
+            const chickenSpeed = (55 + strength * 75) * chickenFleeFactor;
+            chicken.x += Math.cos(chicken.direction) * chickenSpeed * delta;
+            chicken.y += Math.sin(chicken.direction) * chickenSpeed * delta;
+          } else {
             chicken.direction += Math.sin(elapsed * chicken.wander + chicken.flap) * delta * .75;
             chicken.x += Math.cos(chicken.direction) * 20 * delta;
             chicken.y += Math.sin(chicken.direction) * 20 * delta;
@@ -2060,19 +2197,11 @@ function bulletHitsFarmObstacle(shot) {
             chicken.y -= Math.sin(chicken.direction) * 55;
             if (phase !== "playing") break;
           } else if (!chicken.hostile && distance < pickupRadius) {
-            if (chicken.golden) {
-              defeatGoldenChicken(chicken);
-            } else {
-              playTone(620, .075, "sine");
-              score++;
-              chickenBalance++;
-              updateChickenBalance();
-              celebration = 1;
-              respawnCollectibleChicken(chicken);
-            }
+            collectChicken(chicken);
           }
         }
 
+        if (phase === "playing") updateSword(delta);
         if (phase !== "playing") return;
         for (let i = goldenDrops.length - 1; i >= 0; i--) {
           const drop = goldenDrops[i];
@@ -2125,6 +2254,7 @@ function bulletHitsFarmObstacle(shot) {
           deathAnimationElapsed = Math.min(deathAnimationDuration, deathAnimationElapsed + delta);
           if (deathAnimationElapsed >= deathAnimationDuration) {
             phase = "gameover";
+            startButton.hidden = false;
             gameOverActions.hidden = false;
           }
         }
@@ -2169,7 +2299,7 @@ function bulletHitsFarmObstacle(shot) {
         farmObstacles = round > 10 ? createFarmObstacleLayout() : [];
         for (let i = 0; i < 3 + bonusChickenCount; i++) {
           const chicken = { hostile: false };
-          placeChicken(chicken, true);
+          respawnCollectibleChicken(chicken);
           chickens.push(chicken);
         }
         const zombieCount = Math.min(1 + Math.floor((round - 1) / 2), 4) + (round === 5 ? 1 : 0);
