@@ -137,6 +137,8 @@
     .home-menu-panel h2 { margin: 0; font: 700 25px Georgia, serif; }
     .home-menu-story { margin: -4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
     .home-menu-prompt { margin: -4px 0 0; color: var(--muted); font-size: 10px; text-align: center; }
+    .home-menu-progression { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid rgba(32, 59, 45, .2); border-radius: 6px; background: #f0eddb; font-size: 11px; font-weight: 900; }
+    .home-menu-progression strong { color: var(--green); font-size: 15px; }
     .home-menu-hook { display: flex; min-height: 48px; align-items: center; justify-content: center; gap: 20px; overflow: hidden; border: 1px solid rgba(32, 59, 45, .2); border-radius: 6px; background: linear-gradient(160deg, #172b35, #526d44); font-size: 30px; }
     .home-menu-hook span:first-child { animation: intro-meteor 3.2s cubic-bezier(.45, 0, .8, .4) infinite; filter: drop-shadow(0 0 9px #d9ee78); }
     .home-menu-hook span:nth-child(2) { animation: intro-hero 2.2s ease-in-out infinite; }
@@ -145,6 +147,30 @@
     .skin-control { display: grid; gap: 5px; color: var(--muted); font-size: 11px; font-weight: 900; }
     .skin-control select { width: 100%; min-height: 38px; padding: 7px 9px; border: 1px solid rgba(32, 59, 45, .3); border-radius: 5px; color: var(--ink); background: #fffdf5; font: inherit; }
     .home-menu-panel .start-button { width: 100%; }
+    .skill-tree-dialog { position: fixed; z-index: 1100; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 16px; background: rgba(17, 32, 24, .84); }
+    .skill-tree-dialog[hidden] { display: none; }
+    .skill-tree-panel { display: grid; width: min(700px, 100%); max-height: min(90vh, 760px); gap: 12px; overflow-y: auto; padding: 18px; border: 2px solid var(--ink); border-radius: 10px; background: #fffdf5; box-shadow: 0 6px 0 rgba(0, 0, 0, .22); }
+    .skill-tree-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .skill-tree-heading h2 { margin: 0; font: 700 25px Georgia, serif; }
+    .skill-tree-heading p { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+    .skill-tree-xp { padding: 7px 10px; border-radius: 6px; color: #fffdf5; background: var(--green); font-size: 13px; font-weight: 900; white-space: nowrap; }
+    .skill-tree-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    .skill-node { display: grid; align-content: start; gap: 7px; padding: 11px; border: 1px solid rgba(32, 59, 45, .25); border-radius: 7px; background: #f7f5e9; }
+    .skill-node h3 { margin: 0; font-size: 13px; }
+    .skill-node p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+    .skill-node small { color: #b65b42; font-size: 10px; font-weight: 900; }
+    .skill-node.is-unlocked { border-color: var(--green); background: #e7edcc; }
+    .skill-node.is-locked { opacity: .72; }
+    .skill-tree-status { min-height: 16px; margin: 0; color: var(--muted); font-size: 10px; font-weight: 800; }
+    .skill-tree-status.is-error { color: #b65b42; }
+    .skill-tree-actions { display: flex; justify-content: flex-end; }
+    .skill-tree-open { min-height: 36px; padding: 7px 10px; border: 1px solid var(--ink); border-radius: 6px; color: var(--ink); background: var(--lime); font: inherit; font-size: 10px; font-weight: 900; cursor: pointer; }
+    .skill-tree-open:hover { background: #e5f59d; }
+    .skill-tree-open:focus-visible, .skill-node button:focus-visible, .skill-tree-close:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+    .skill-node button { min-height: 34px; padding: 6px 9px; border: 1px solid var(--ink); border-radius: 5px; color: var(--ink); background: var(--lime); font: inherit; font-size: 10px; font-weight: 900; cursor: pointer; }
+    .skill-node button:disabled { color: var(--muted); background: #ecebdd; cursor: not-allowed; }
+    .skill-tree-close { min-height: 38px; padding: 8px 13px; border: 1px solid var(--ink); border-radius: 6px; color: #fffdf5; background: var(--green); font: inherit; font-size: 11px; font-weight: 900; cursor: pointer; }
+    .xp-stat .stat-value { color: var(--green); }
     .intro-screen {
       position: fixed;
       z-index: 1000;
@@ -372,6 +398,9 @@
       list-style: none;
     }
     .field-control-button:hover, .sound-menu[open] > summary { background: #286341; }
+    .skip-wave-button { display: flex; width: auto; min-width: 108px; height: 40px; align-items: center; justify-content: center; gap: 5px; padding: 0 10px; font-size: 12px; white-space: nowrap; }
+    .skip-wave-button:disabled { color: #d7ddcf; background: rgba(68, 76, 62, .9); cursor: not-allowed; }
+    .skip-wave-button:disabled:hover { background: rgba(68, 76, 62, .9); }
     .field-control-button:focus-visible, .sound-menu > summary:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
     .sound-menu { position: relative; }
     .sound-menu > summary::-webkit-details-marker { display: none; }
@@ -603,6 +632,10 @@
       .start-button { min-width: 112px; padding: 11px 10px; font-size: 12px; }
       .home-menu-panel { gap: 9px; padding: 14px; }
       .home-menu-panel h2 { font-size: 22px; }
+      .skill-tree-dialog { padding: 9px; }
+      .skill-tree-panel { gap: 9px; padding: 12px; }
+      .skill-tree-heading h2 { font-size: 21px; }
+      .skill-tree-grid { grid-template-columns: 1fr; gap: 6px; }
       .skin-control select { min-height: 34px; }
       .weapon-controls { width: 100%; justify-content: flex-end; }
       .combat-button { min-height: 36px; padding: 7px 8px; }
@@ -658,8 +691,21 @@
                 <option value="russet">Warm tones</option>
               </select>
             </label>
+            <div class="home-menu-progression"><span>SKILL XP</span><strong id="menu-xp">0 XP</strong></div>
+            <button class="skill-tree-open" id="open-skill-tree" type="button">View skill tree</button>
             <button class="start-button" id="menu-start" type="button">Start the rescue</button>
             <p class="home-menu-prompt">A short story plays first. Skip it any time.</p>
+          </div>
+        </section>
+        <section class="skill-tree-dialog" id="skill-tree-dialog" role="dialog" aria-modal="true" aria-labelledby="skill-tree-title" hidden>
+          <div class="skill-tree-panel">
+            <div class="skill-tree-heading">
+              <div><h2 id="skill-tree-title">Farm skills</h2><p>Earn XP in your runs and spend it on permanent abilities.</p></div>
+              <div class="skill-tree-xp" id="skill-tree-xp">0 XP</div>
+            </div>
+            <div class="skill-tree-grid" id="skill-tree-grid"></div>
+            <p class="skill-tree-status" id="skill-tree-status" aria-live="polite"></p>
+            <div class="skill-tree-actions"><button class="skill-tree-close" id="close-skill-tree" type="button">Back to game</button></div>
           </div>
         </section>
         <section class="intro-screen" id="intro-screen" aria-label="Chicken Chase story" aria-live="polite" hidden>
@@ -697,7 +743,8 @@
         </section>
         <div class="field-controls" aria-label="Practice controls">
           <button class="field-control-button" id="pause-button" type="button" title="Pause practice" aria-label="Pause practice" disabled>⏸</button>
-          <button class="field-control-button" id="skip-wave-button" type="button" title="Skip wave" aria-label="Skip wave" hidden>⏭</button>
+          <button class="field-control-button" id="field-skill-tree" type="button" title="Open skill tree" aria-label="Open skill tree">✦</button>
+          <button class="field-control-button skip-wave-button" id="skip-wave-button" type="button" title="Skip wave" aria-label="Skip wave" hidden>⏭ Skip wave</button>
           <button class="field-control-button" id="restart-button" type="button" title="Restart practice" aria-label="Restart practice">↻</button>
           <details class="sound-menu">
             <summary title="Audio settings" aria-label="Audio settings">♫</summary>
@@ -723,6 +770,7 @@
           <div class="stat"><span class="gold-stack-icon" aria-hidden="true"><i></i><i></i><i></i></span><div><div class="stat-label">GOLD</div><div class="stat-value" id="score">0</div></div></div>
           <div class="stat"><span class="stat-icon" aria-hidden="true">⏱</span><div><div class="stat-label">TIME</div><div class="stat-value" id="time">45</div></div></div>
           <div class="stat"><span class="stat-icon" aria-hidden="true">✓</span><div><div class="stat-label">TRIES</div><div class="stat-value" id="health">3 / 3</div></div></div>
+          <div class="stat xp-stat"><span class="stat-icon" aria-hidden="true">✦</span><div><div class="stat-label">XP</div><div class="stat-value" id="xp">0</div></div></div>
         </div>
         <div class="game-over-actions" id="game-over-actions" hidden>
           <button class="start-button" id="start" type="button">Respawn</button>
@@ -822,6 +870,7 @@
       const scoreNode = document.querySelector("#score");
       const timeNode = document.querySelector("#time");
       const healthNode = document.querySelector("#health");
+      const xpNode = document.querySelector("#xp");
       const rewardToast = document.querySelector("#reward-toast");
       const rewardToastTitle = document.querySelector("#reward-toast-title");
       const rewardToastMessage = document.querySelector("#reward-toast-message");
@@ -830,6 +879,14 @@
       const gameOverActions = document.querySelector("#game-over-actions");
       const restartToMenuButton = document.querySelector("#restart-to-menu");
       const homeMenu = document.querySelector("#home-menu");
+      const menuXpNode = document.querySelector("#menu-xp");
+      const skillTreeDialog = document.querySelector("#skill-tree-dialog");
+      const skillTreeGrid = document.querySelector("#skill-tree-grid");
+      const skillTreeXpNode = document.querySelector("#skill-tree-xp");
+      const skillTreeStatus = document.querySelector("#skill-tree-status");
+      const openSkillTreeButton = document.querySelector("#open-skill-tree");
+      const fieldSkillTreeButton = document.querySelector("#field-skill-tree");
+      const closeSkillTreeButton = document.querySelector("#close-skill-tree");
       const introScreen = document.querySelector("#intro-screen");
       const introArt = document.querySelector("#intro-art");
       const introCopy = document.querySelector(".intro-copy");
@@ -880,26 +937,23 @@
       const joystickKnob = document.querySelector("#joystick-knob");
       const width = canvas.width;
       const height = canvas.height;
+      const worldChunkSize = 800;
       const maximumWeaponRange = Math.ceil(Math.hypot(width, height));
       const roundDuration = 45;
-      const playerWallMarginX = 38;
-      const playerWallMarginY = 42;
       const playerRadius = 18;
-      const playerDiameter = playerRadius * 2;
       const keys = new Set();
-      const grassMarks = [];
       const farmObstacleTypes = [
         { width: 110, height: 76, type: "hay" },
         { width: 100, height: 64, type: "trough" },
         { width: 94, height: 82, type: "crate" },
         { width: 150, height: 54, type: "fence" }
       ];
-      const farmObstacleSpots = [
-        { x: 90, y: 65 }, { x: 400, y: 70 }, { x: 730, y: 65 },
-        { x: 70, y: 235 }, { x: 780, y: 235 },
-        { x: 95, y: 400 }, { x: 420, y: 415 }, { x: 740, y: 400 }
-      ];
       let farmObstacles = [];
+      const worldChunks = new Map();
+      const visitedWorldChunks = new Set();
+      let activeWorldChunks = [];
+      let worldSeed = Math.floor(Math.random() * 0x7fffffff);
+      let currentWorldChunkId = null;
       const chickens = [];
       const pendingZombieRespawns = [];
       const touchInput = { x: 0, y: 0 };
@@ -916,6 +970,11 @@
       let round = 1;
       let score = 0;
       let chickenBalance = 0;
+      let skillXp = 0;
+      const unlockedSkillIds = new Set();
+      let progressionError = "";
+      let skillTreeReturnPhase = "menu";
+      let skillTreeOpener = null;
       let deathAnimationElapsed = 0;
       const deathAnimationDuration = 2.6;
       let bonusChickenCount = 0;
@@ -933,10 +992,18 @@
       let moveSpeed = 205;
       let roundSpeedBonus = 0;
       let pickupRadius = 25;
+      let swordRange = 58;
       let hitProtection = 1.2;
       let roundHitProtectionBonus = 0;
       let chickenFleeFactor = 1;
       let zombieSpeedFactor = 1;
+      let homingBulletsEnabled = false;
+      let extraProjectiles = 0;
+      let lifeStealEnabled = false;
+      let explosiveEnemiesEnabled = false;
+      let freezeChance = 0;
+      let secondWindEnabled = false;
+      let secondWindCooldown = 0;
       let activeOffers = [];
       const lockedOfferIds = new Set();
       const purchasedOfferIds = new Set();
@@ -957,6 +1024,8 @@
       let joystickPointerId = null;
       const attackEffects = [];
       const zombieShots = [];
+      const playerShots = [];
+      const visualEffects = [];
       const goldenDrops = [];
       const activeEffects = new Map();
       player.invulnerable = 0;
@@ -982,14 +1051,34 @@
         { id: "regeneration", icon: "❤️", name: "Regeneration", description: "Restore health faster with each purchase", price: 40, apply: () => { if (!healthRegenerationEnabled) { healthRegenerationEnabled = true; healthRegenerationTimer = 0; } healthRegenerationStacks++; addActiveEffect("upgrade-regeneration", "buff", "Regeneration: healing speeds up with each purchase"); } },
         { id: "gun-damage", icon: "💥", name: "Weapon damage", description: "+1 damage with your weapon", price: 30, requiresWeapon: true, apply: () => { weapon.damage++; addActiveEffect("upgrade-gun-damage", "buff", `${weapon.name}: +1 damage`); } },
         { id: "ammo", icon: "📦", name: "Ammo crate", description: "Adds one magazine of reserve ammo", price: 20, requiresRangedWeapon: true, apply: () => { weapon.reserve += weapon.magazine; addActiveEffect("upgrade-ammo", "buff", `${weapon.name}: +${weapon.magazine} reserve ammo`); } },
-        { id: "gun-range", icon: "🎯", name: "Weapon range", description: "+25% range with your weapon", price: 25, requiresRangeUpgrade: true, apply: () => { weapon.range = cheatMode ? Math.round(weapon.range * 1.25) : Math.min(maximumWeaponRange, Math.round(weapon.range * 1.25)); addActiveEffect("upgrade-gun-range", "buff", `${weapon.name}: +25% range`); } }
+        { id: "gun-range", icon: "🎯", name: "Weapon range", description: "+25% range with your weapon", price: 25, requiresRangeUpgrade: true, apply: () => { weapon.range = cheatMode ? Math.round(weapon.range * 1.25) : Math.min(maximumWeaponRange, Math.round(weapon.range * 1.25)); addActiveEffect("upgrade-gun-range", "buff", `${weapon.name}: +25% range`); } },
+        { id: "homing-bullets", icon: "🧭", name: "Homing bullets", description: "Bullets steer toward their target", price: 34, requiresRangedWeapon: true, apply: () => { homingBulletsEnabled = true; addActiveEffect("upgrade-homing", "buff", "Homing bullets: shots track their target"); } },
+        { id: "double-damage", icon: "💥", name: "Double damage", description: "Your weapon deals twice as much damage", price: 48, requiresWeapon: true, apply: () => { weapon.damage *= 2; addActiveEffect("upgrade-double-damage", "buff", `${weapon.name}: damage doubled`); } },
+        { id: "extra-projectiles", icon: "🔱", name: "Extra projectiles", description: "Fire two extra bullets with every shot", price: 42, requiresRangedWeapon: true, apply: () => { extraProjectiles = 2; addActiveEffect("upgrade-extra-projectiles", "buff", "Extra projectiles: +2 bullets per shot"); } },
+        { id: "swift-boots", icon: "💨", name: "Swift boots", description: "+25 movement speed", price: 18, apply: () => { moveSpeed += 25; addActiveEffect("upgrade-swift-boots", "buff", "Swift boots: +25 movement speed"); } },
+        { id: "life-steal", icon: "🧛", name: "Life steal", description: "Weapon hits can restore 1 heart", price: 36, requiresWeapon: true, apply: () => { lifeStealEnabled = true; addActiveEffect("upgrade-life-steal", "buff", "Life steal: weapon hits can restore health"); } },
+        { id: "explosive-enemies", icon: "🧨", name: "Explosive enemies", description: "Defeated zombies damage nearby enemies", price: 40, requiresWeapon: true, apply: () => { explosiveEnemiesEnabled = true; addActiveEffect("upgrade-explosive-enemies", "buff", "Explosive enemies: zombies blast nearby enemies"); } },
+        { id: "frost-rounds", icon: "❄️", name: "Frost rounds", description: "Weapon hits have a 25% chance to freeze enemies", price: 32, requiresWeapon: true, apply: () => { freezeChance = Math.min(.75, freezeChance + .25); addActiveEffect("upgrade-frost-rounds", "buff", `Frost rounds: ${Math.round(freezeChance * 100)}% freeze chance`); } },
+        { id: "second-wind", icon: "✨", name: "Second wind", description: "After a hit, gain 3 seconds of invulnerability (30-second cooldown)", price: 42, apply: () => { secondWindEnabled = true; addActiveEffect("upgrade-second-wind", "buff", "Second wind: 3s invulnerability after a hit"); } }
       ];
 
       const weaponCatalog = {
         knife: { id: "knife", name: "Knife", range: 90, damage: 1, cooldown: .24, speedModifier: 25, magazine: Infinity, ammo: Infinity, reserve: Infinity, reloadTime: 0, perk: "Quick strikes, +25 movement speed", debuff: "90 px reach" },
         sniper: { id: "sniper", name: "Sniper", range: 420, damage: 2, cooldown: 1.05, speedModifier: -45, magazine: 5, ammo: 5, reserve: 20, reloadTime: 1.5, perk: "420 px range, 2 damage", debuff: "Slow shots, -45 movement speed" },
-        ak47: { id: "ak47", name: "AK-47", range: 220, damage: 1, cooldown: .16, speedModifier: -20, magazine: 30, ammo: 30, reserve: 90, reloadTime: 1.25, perk: "Rapid automatic fire", debuff: "-20 movement speed, frequent reloads" }
+        ak47: { id: "ak47", name: "AK-47", range: 220, damage: 1, cooldown: .16, speedModifier: -20, magazine: 30, ammo: 30, reserve: 90, reloadTime: 1.25, perk: "Rapid automatic fire", debuff: "-20 movement speed, frequent reloads" },
+        shotgun: { id: "shotgun", name: "Rooster Shotgun", range: 250, damage: 4, cooldown: .72, speedModifier: -8, magazine: 8, ammo: 8, reserve: 40, reloadTime: 1.35, projectile: true, projectileColor: "#ffb353", perk: "Heavy close-range blasts", debuff: "Short range, slow reload" },
+        rocket: { id: "rocket", name: "Egg Launcher", range: 370, damage: 7, cooldown: 1.05, speedModifier: -14, magazine: 5, ammo: 5, reserve: 25, reloadTime: 1.7, projectile: true, explosive: true, projectileColor: "#ff784f", perk: "Explosive splash damage", debuff: "Slow fire rate" },
+        plasma: { id: "plasma", name: "Plasma Rooster", range: 460, damage: 10, cooldown: .48, speedModifier: 0, magazine: 18, ammo: 18, reserve: 72, reloadTime: 1.3, projectile: true, projectileColor: "#8df2ff", perk: "Fast, powerful plasma bolts", debuff: "Energy magazine" },
+        railgun: { id: "railgun", name: "Colonel Railgun", range: 520, damage: 15, cooldown: .92, speedModifier: -5, magazine: 6, ammo: 6, reserve: 30, reloadTime: 1.5, projectile: true, pierce: true, projectileColor: "#b8a0ff", perk: "Piercing high-damage shots", debuff: "Slow fire rate" },
+        "final-cannon": { id: "final-cannon", name: "Final Colonel Cannon", range: 560, damage: 22, cooldown: .78, speedModifier: 5, magazine: 8, ammo: 8, reserve: 40, reloadTime: 1.35, projectile: true, explosive: true, projectileColor: "#ff596b", perk: "Devastating explosive shots", debuff: "The Colonel's legendary weapon" }
       };
+      const bossCatalog = [
+        { id: "mega-rooster", name: "The Mega Rooster", ability: "charge", color: "#d56b35" },
+        { id: "egg-destroyer", name: "Egg Destroyer", ability: "explosive-eggs", color: "#d1a936" },
+        { id: "the-farmer", name: "The Farmer", ability: "summon", color: "#56764b" },
+        { id: "mutant-turkey", name: "The Mutant Turkey", ability: "split", color: "#8d5b8f" },
+        { id: "final-colonel", name: "The Final Colonel", ability: "colonel", color: "#b94742" }
+      ];
 
       const farmerSkinPalettes = {
         classic: { shirt: "#376f50", face: "#f2c9a2", brim: "#d7a948", crown: "#edc965" },
@@ -1007,23 +1096,344 @@
         scout: { apply: () => { moveSpeed += 30; maxHealth = Math.max(1, maxHealth - 1); health = Math.min(health, maxHealth); }, perk: "+30 movement speed", debuff: "-1 max health" },
         guardian: { apply: () => { hitProtection += .6; moveSpeed = Math.max(100, moveSpeed - 15); }, perk: "+0.6s hit protection", debuff: "-15 movement speed" }
       };
+      const skillCatalog = [
+        { id: "quick-study", icon: "📘", name: "Quick Study", description: "Earn 25% more XP from every action.", cost: 25 },
+        { id: "swift-boots", icon: "🥾", name: "Swift Boots", description: "+20 movement speed every run.", cost: 40, requires: "quick-study", apply: () => { moveSpeed += 20; } },
+        { id: "tough-farmer", icon: "💚", name: "Tough Farmer", description: "+1 starting heart every run.", cost: 40, requires: "quick-study", apply: () => { maxHealth++; health++; } },
+        { id: "sharp-sword", icon: "⚔️", name: "Sharp Sword", description: "The starter sword reaches farther.", cost: 55, requires: "swift-boots", apply: () => { swordRange += 18; } },
+        { id: "extra-flock", icon: "🐣", name: "Extra Flock", description: "+1 collectible chicken each round.", cost: 55, requires: "tough-farmer", apply: () => { bonusChickenCount++; } }
+      ];
+      const progressionStorageKey = "chicken-chase-progression-v1";
 
-      for (let i = 0; i < 145; i++) {
-        grassMarks.push({
-          x: 30 + Math.random() * (width - 60),
-          y: 28 + Math.random() * (height - 56),
-          size: 2 + Math.random() * 5,
-          shade: Math.random() > .5 ? "rgba(53,112,56,.13)" : "rgba(235,239,155,.19)"
-        });
+      function loadProgression() {
+        try {
+          const savedProgression = window.localStorage.getItem(progressionStorageKey);
+          if (!savedProgression) return;
+          const progression = JSON.parse(savedProgression);
+          if (
+            !progression ||
+            !Number.isSafeInteger(progression.xp) ||
+            progression.xp < 0 ||
+            !Array.isArray(progression.unlockedSkills) ||
+            progression.unlockedSkills.some(id => typeof id !== "string")
+          ) {
+            throw new Error("Saved skill progression has an invalid format.");
+          }
+          skillXp = progression.xp;
+          const savedSkills = new Set(progression.unlockedSkills);
+          for (const skill of skillCatalog) {
+            if (savedSkills.has(skill.id) && (!skill.requires || unlockedSkillIds.has(skill.requires))) {
+              unlockedSkillIds.add(skill.id);
+            }
+          }
+        } catch (error) {
+          progressionError = "Saved XP could not be loaded. Progress may not persist in this browser.";
+          console.error("Could not load Chicken Chase progression.", error);
+        }
+      }
+
+      function persistProgression() {
+        try {
+          window.localStorage.setItem(progressionStorageKey, JSON.stringify({
+            xp: skillXp,
+            unlockedSkills: [...unlockedSkillIds]
+          }));
+          progressionError = "";
+        } catch (error) {
+          progressionError = "Progress could not be saved in this browser.";
+          console.error("Could not save Chicken Chase progression.", error);
+        }
+        renderSkillTree();
+      }
+
+      function renderSkillTree() {
+        const xpLabel = `${skillXp} XP`;
+        xpNode.textContent = String(skillXp);
+        menuXpNode.textContent = xpLabel;
+        skillTreeXpNode.textContent = xpLabel;
+        if (skillTreeDialog.hidden) return;
+        skillTreeGrid.replaceChildren();
+        for (const skill of skillCatalog) {
+          const unlocked = unlockedSkillIds.has(skill.id);
+          const prerequisite = skill.requires && skillCatalog.find(item => item.id === skill.requires);
+          const prerequisiteMet = !skill.requires || unlockedSkillIds.has(skill.requires);
+          const node = document.createElement("article");
+          node.className = `skill-node${unlocked ? " is-unlocked" : prerequisiteMet ? "" : " is-locked"}`;
+          const title = document.createElement("h3");
+          title.textContent = `${skill.icon} ${skill.name}`;
+          const description = document.createElement("p");
+          description.textContent = skill.description;
+          const requirement = document.createElement("small");
+          requirement.textContent = prerequisite && !prerequisiteMet
+            ? `Requires: ${prerequisite.name}`
+            : unlocked
+            ? "PERMANENTLY UNLOCKED"
+            : `Cost: ${skill.cost} XP`;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.dataset.skill = skill.id;
+          button.textContent = unlocked
+            ? "Unlocked"
+            : !prerequisiteMet
+            ? `Unlock ${prerequisite.name} first`
+            : skillXp < skill.cost
+            ? `Need ${skill.cost - skillXp} more XP`
+            : `Unlock · ${skill.cost} XP`;
+          button.disabled = unlocked || !prerequisiteMet || skillXp < skill.cost;
+          node.append(title, description, requirement, button);
+          skillTreeGrid.append(node);
+        }
+        skillTreeStatus.classList.toggle("is-error", Boolean(progressionError));
+        skillTreeStatus.textContent = progressionError || "Collect chickens, defeat zombies, and clear rounds to earn XP. Progress saves on this browser.";
+      }
+
+      function awardXp(amount) {
+        const multiplier = unlockedSkillIds.has("quick-study") ? 1.25 : 1;
+        skillXp += Math.max(1, Math.round(amount * multiplier));
+        persistProgression();
+      }
+
+      function applyUnlockedSkills() {
+        for (const skill of skillCatalog) {
+          if (unlockedSkillIds.has(skill.id) && skill.apply) skill.apply();
+        }
+      }
+
+      function unlockSkill(id) {
+        const skill = skillCatalog.find(item => item.id === id);
+        if (!skill || unlockedSkillIds.has(id) || skillXp < skill.cost) return;
+        if (skill.requires && !unlockedSkillIds.has(skill.requires)) return;
+        skillXp -= skill.cost;
+        unlockedSkillIds.add(id);
+        if (skill.apply && phase !== "menu") skill.apply();
+        if (id === "tough-farmer" && phase !== "menu") updateHealthReadout();
+        if (id === "extra-flock" && phase !== "menu") {
+          const chicken = { hostile: false };
+          respawnCollectibleChicken(chicken);
+          chickens.push(chicken);
+        }
+        persistProgression();
+        if (phase !== "menu") showRewardToast("SKILL UNLOCKED", `${skill.name} is now permanent.`);
+        playTone(740, .12, "triangle");
+      }
+
+      function openSkillTree() {
+        if (!skillTreeDialog.hidden) return;
+        skillTreeOpener = document.activeElement;
+        skillTreeReturnPhase = phase;
+        if (phase === "playing" || phase === "countdown" || phase === "dying") {
+          phase = "paused";
+          keys.clear();
+          resetJoystick();
+          syncPauseButton();
+          updateWeaponReadout();
+        }
+        skillTreeDialog.hidden = false;
+        renderSkillTree();
+        closeSkillTreeButton.focus();
+      }
+
+      function closeSkillTree() {
+        if (skillTreeDialog.hidden) return;
+        skillTreeDialog.hidden = true;
+        phase = skillTreeReturnPhase;
+        syncPauseButton();
+        updateWeaponReadout();
+        if (skillTreeOpener instanceof HTMLElement) skillTreeOpener.focus();
+      }
+
+      function getWorldChunkId(chunkX, chunkY) {
+        return `${chunkX},${chunkY}`;
+      }
+
+      function createChunkRandom(chunkX, chunkY) {
+        let seed = (Math.imul(chunkX + worldSeed, 374761393) ^ Math.imul(chunkY + worldSeed, 668265263)) >>> 0;
+        return () => {
+          seed = (seed + 0x6d2b79f5) >>> 0;
+          let value = seed;
+          value = Math.imul(value ^ (value >>> 15), value | 1);
+          value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+          return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function getWorldChunk(chunkX, chunkY) {
+        const id = getWorldChunkId(chunkX, chunkY);
+        if (worldChunks.has(id)) return worldChunks.get(id);
+        const random = createChunkRandom(chunkX, chunkY);
+        const originX = chunkX * worldChunkSize;
+        const originY = chunkY * worldChunkSize;
+        const terrain = ["meadow", "orchard", "grove", "marsh"][Math.floor(random() * 4)];
+        const secretArea = random() < .18
+          ? {
+            x: originX + 180 + random() * (worldChunkSize - 360),
+            y: originY + 180 + random() * (worldChunkSize - 360),
+            discovered: false
+          }
+          : null;
+        const chunk = { id, chunkX, chunkY, originX, originY, terrain, marks: [], tufts: [], trees: [], obstacles: [], cache: null, secretArea };
+        for (let i = 0; i < 44; i++) {
+          chunk.marks.push({
+            x: originX + 18 + random() * (worldChunkSize - 36),
+            y: originY + 18 + random() * (worldChunkSize - 36),
+            size: 2 + random() * 5,
+            shade: random() > .5 ? "rgba(53,112,56,.13)" : "rgba(235,239,155,.19)"
+          });
+        }
+        for (let i = 0; i < 34; i++) {
+          chunk.tufts.push({
+            x: originX + 22 + random() * (worldChunkSize - 44),
+            y: originY + 22 + random() * (worldChunkSize - 44),
+            size: 3 + random() * 5,
+            angle: random() * Math.PI,
+            flower: random() < .18
+          });
+        }
+        if (terrain === "orchard" || terrain === "grove") {
+          const treeCount = 4 + Math.floor(random() * 4);
+          for (let i = 0; i < treeCount; i++) {
+            chunk.trees.push({
+              x: originX + 60 + random() * (worldChunkSize - 120),
+              y: originY + 60 + random() * (worldChunkSize - 120),
+              radius: terrain === "grove" ? 22 + random() * 8 : 17 + random() * 5,
+              fruit: random() < .55
+            });
+          }
+        }
+        const obstacleCount = 1 + Math.floor(random() * 3);
+        for (let i = 0; i < obstacleCount; i++) {
+          for (let attempt = 0; attempt < 18; attempt++) {
+            const template = farmObstacleTypes[Math.floor(random() * farmObstacleTypes.length)];
+            const obstacle = {
+              ...template,
+              x: originX + 80 + random() * (worldChunkSize - template.width - 160),
+              y: originY + 80 + random() * (worldChunkSize - template.height - 160)
+            };
+            const nearestPlayerX = Math.max(obstacle.x, Math.min(player.x, obstacle.x + obstacle.width));
+            const nearestPlayerY = Math.max(obstacle.y, Math.min(player.y, obstacle.y + obstacle.height));
+            const nearPlayer = Math.hypot(nearestPlayerX - player.x, nearestPlayerY - player.y) < playerRadius + 40;
+            const insideSecretArea = secretArea && Math.hypot(
+              obstacle.x + obstacle.width / 2 - secretArea.x,
+              obstacle.y + obstacle.height / 2 - secretArea.y
+            ) < 135;
+            if (!nearPlayer && !insideSecretArea && chunk.obstacles.every(existing => farmObstaclesAreSeparated(obstacle, existing))) {
+              chunk.obstacles.push(obstacle);
+              farmObstacles.push(obstacle);
+              break;
+            }
+          }
+        }
+        if (secretArea || random() < .28) {
+          for (let attempt = 0; attempt < 16; attempt++) {
+            const cache = {
+              x: secretArea ? secretArea.x + (random() - .5) * 100 : originX + 75 + random() * (worldChunkSize - 150),
+              y: secretArea ? secretArea.y + (random() - .5) * 100 : originY + 75 + random() * (worldChunkSize - 150),
+              amount: 10 + Math.floor(random() * 16),
+              discovered: false,
+              collected: false
+            };
+            if (!collidesWithFarmObstacle(cache.x, cache.y, 36)) {
+              chunk.cache = cache;
+              break;
+            }
+          }
+        }
+        worldChunks.set(id, chunk);
+        return chunk;
+      }
+
+      function initializeWorld() {
+        worldSeed = Math.floor(Math.random() * 0x7fffffff);
+        worldChunks.clear();
+        visitedWorldChunks.clear();
+        activeWorldChunks = [];
+        farmObstacles.length = 0;
+        const chunkX = Math.floor(player.x / worldChunkSize);
+        const chunkY = Math.floor(player.y / worldChunkSize);
+        currentWorldChunkId = getWorldChunkId(chunkX, chunkY);
+        getWorldChunk(chunkX, chunkY);
+        visitedWorldChunks.add(currentWorldChunkId);
+      }
+
+      function spawnWorldChunkEncounter(chunk) {
+        const random = createChunkRandom(chunk.chunkX + 137, chunk.chunkY - 211);
+        const zombieCount = Math.min(2 + Math.floor((round - 1) / 5), 7);
+        for (let i = 0; i < zombieCount; i++) {
+          const isSpiky = random() < .3;
+          const zombieHealth = 2 * Math.pow(1.05, round - 1) * (isSpiky ? 2 : 1);
+          const zombie = {
+            hostile: true,
+            health: zombieHealth,
+            maxHealth: zombieHealth,
+            spiky: isSpiky,
+            gunner: round >= 10 && random() < .33,
+            shootCooldown: .8 + random() * 1.2
+          };
+          placeChickenInWorldChunk(zombie, chunk);
+          chickens.push(zombie);
+        }
+        const collectibleCount = 3 + Math.floor(random() * 3);
+        for (let i = 0; i < collectibleCount; i++) {
+          const chicken = { hostile: false };
+          respawnCollectibleChicken(chicken);
+          placeChickenInWorldChunk(chicken, chunk);
+          chickens.push(chicken);
+        }
+        showRewardToast("NEW AREA", "You found fresh trails and more chickens.");
+      }
+
+      function ensureWorldChunks() {
+        const left = Math.floor((player.x - width / 2) / worldChunkSize);
+        const right = Math.floor((player.x + width / 2) / worldChunkSize);
+        const top = Math.floor((player.y - height / 2) / worldChunkSize);
+        const bottom = Math.floor((player.y + height / 2) / worldChunkSize);
+        for (let chunkY = top; chunkY <= bottom; chunkY++) {
+          for (let chunkX = left; chunkX <= right; chunkX++) getWorldChunk(chunkX, chunkY);
+        }
+        const chunkX = Math.floor(player.x / worldChunkSize);
+        const chunkY = Math.floor(player.y / worldChunkSize);
+        activeWorldChunks = [];
+        for (let nearbyY = chunkY - 1; nearbyY <= chunkY + 1; nearbyY++) {
+          for (let nearbyX = chunkX - 1; nearbyX <= chunkX + 1; nearbyX++) {
+            activeWorldChunks.push(getWorldChunk(nearbyX, nearbyY));
+          }
+        }
+        farmObstacles = activeWorldChunks.flatMap(chunk => chunk.obstacles);
+        const id = getWorldChunkId(chunkX, chunkY);
+        if (id === currentWorldChunkId) return;
+        currentWorldChunkId = id;
+        if (visitedWorldChunks.has(id)) return;
+        visitedWorldChunks.add(id);
+        spawnWorldChunkEncounter(getWorldChunk(chunkX, chunkY));
+      }
+
+      function placeChickenInWorldChunk(chicken, chunk) {
+        const radius = chicken.boss ? 32 : chicken.spiky ? 24 : chicken.golden ? 18 : 16;
+        for (let attempt = 0; attempt < 40; attempt++) {
+          const x = chunk.originX + 70 + Math.random() * (worldChunkSize - 140);
+          const y = chunk.originY + 70 + Math.random() * (worldChunkSize - 140);
+          if (Math.hypot(x - player.x, y - player.y) < 190 || collidesWithFarmObstacle(x, y, radius)) continue;
+          chicken.x = x;
+          chicken.y = y;
+          chicken.direction = Math.random() * Math.PI * 2;
+          chicken.wander = .5 + Math.random() * 1.5;
+          chicken.flap = Math.random() * 6;
+          return;
+        }
+        placeChicken(chicken, true);
       }
 
       function placeChicken(chicken, firstSpawn = false) {
         const radius = chicken.boss ? 32 : chicken.spiky ? 24 : chicken.golden ? 18 : 16;
-        let x, y;
-        do {
-          x = 55 + Math.random() * (width - 110);
-          y = 55 + Math.random() * (height - 110);
-        } while ((firstSpawn && Math.hypot(x - player.x, y - player.y) < 180) || collidesWithFarmObstacle(x, y, radius));
+        let x = player.x;
+        let y = player.y;
+        for (let attempt = 0; attempt < 50; attempt++) {
+          const angle = Math.random() * Math.PI * 2;
+          const distance = firstSpawn ? 260 + Math.random() * 380 : 140 + Math.random() * 420;
+          x = player.x + Math.cos(angle) * distance;
+          y = player.y + Math.sin(angle) * distance;
+          if (!collidesWithFarmObstacle(x, y, radius)) break;
+        }
         chicken.x = x;
         chicken.y = y;
         chicken.direction = Math.random() * Math.PI * 2;
@@ -1032,8 +1442,13 @@
       }
 
       function collidesWithFarmObstacle(x, y, radius) {
-        if (round <= 10) return false;
         return farmObstacles.some(obstacle => {
+          if (
+            x < obstacle.x - radius ||
+            x > obstacle.x + obstacle.width + radius ||
+            y < obstacle.y - radius ||
+            y > obstacle.y + obstacle.height + radius
+          ) return false;
           const nearestX = Math.max(obstacle.x, Math.min(x, obstacle.x + obstacle.width));
           const nearestY = Math.max(obstacle.y, Math.min(y, obstacle.y + obstacle.height));
           return Math.hypot(x - nearestX, y - nearestY) < radius;
@@ -1052,38 +1467,6 @@
           first.y - (second.y + second.height)
         );
         return Math.hypot(horizontalGap, verticalGap) >= playerRadius * 2;
-      }
-
-      function createFarmObstacleLayout() {
-        const spots = [...farmObstacleSpots];
-        for (let i = spots.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [spots[i], spots[j]] = [spots[j], spots[i]];
-        }
-        const count = 3 + Math.floor(Math.random() * 4);
-        const obstacles = [];
-        for (const spot of spots) {
-          for (let attempt = 0; attempt < 20; attempt++) {
-            const template = farmObstacleTypes[Math.floor(Math.random() * farmObstacleTypes.length)];
-            const obstacle = {
-              ...template,
-              x: Math.max(
-                playerWallMarginX + playerRadius + playerDiameter,
-                Math.min(width - playerWallMarginX - playerRadius - playerDiameter - template.width, spot.x + Math.random() * 36 - 18)
-              ),
-              y: Math.max(
-                playerWallMarginY + playerRadius + playerDiameter,
-                Math.min(height - playerWallMarginY - playerRadius - playerDiameter - template.height, spot.y + Math.random() * 36 - 18)
-              )
-            };
-            if (obstacles.every(existing => farmObstaclesAreSeparated(obstacle, existing))) {
-              obstacles.push(obstacle);
-              break;
-            }
-          }
-          if (obstacles.length === count) break;
-        }
-        return obstacles;
       }
 
       function resolveChickenObstacleCollision(chicken, previousX, previousY, radius) {
@@ -1120,22 +1503,7 @@
       }
 
       function placeChickenOffscreen(chicken) {
-        placeChicken(chicken);
-        const edge = Math.floor(Math.random() * 4);
-        if (edge === 0) {
-          chicken.x = -45;
-          chicken.y = 55 + Math.random() * (height - 110);
-        } else if (edge === 1) {
-          chicken.x = width + 45;
-          chicken.y = 55 + Math.random() * (height - 110);
-        } else if (edge === 2) {
-          chicken.x = 55 + Math.random() * (width - 110);
-          chicken.y = -45;
-        } else {
-          chicken.x = 55 + Math.random() * (width - 110);
-          chicken.y = height + 45;
-        }
-        chicken.enteringFromOffscreen = true;
+        placeChicken(chicken, true);
       }
 
       function updateChickenBalance() {
@@ -1205,7 +1573,12 @@
       function syncPauseButton() {
         const canPause = phase === "playing" || phase === "countdown" || phase === "paused";
         pauseButton.disabled = !canPause;
-        skipWaveButton.hidden = !cheatMode || !canPause;
+        const bossWave = round % 10 === 0;
+        skipWaveButton.hidden = !canPause;
+        skipWaveButton.disabled = bossWave;
+        skipWaveButton.textContent = bossWave ? "👑 Boss wave" : "⏭ Skip wave";
+        skipWaveButton.title = bossWave ? "Boss waves cannot be skipped" : "Skip wave";
+        skipWaveButton.setAttribute("aria-label", skipWaveButton.title);
         const paused = phase === "paused";
         const label = paused ? "Resume practice" : "Pause practice";
         pauseButton.textContent = paused ? "▶" : "⏸";
@@ -1282,6 +1655,10 @@
       }
 
       function dropZombieGoldPackage(chicken) {
+        if (chicken.boss) {
+          dropBossRewards(chicken);
+          return;
+        }
         if (Math.random() < .1) {
           goldenDrops.push({
             x: chicken.x,
@@ -1290,6 +1667,138 @@
             amount: 3 + Math.floor(Math.random() * 5)
           });
         }
+      }
+
+      function getBossArchetype(bossNumber) {
+        return bossCatalog[(bossNumber - 1) % bossCatalog.length];
+      }
+
+      function spawnMutantSplits(boss) {
+        const splitHealth = Math.max(4, Math.ceil(boss.maxHealth * .12));
+        for (let i = 0; i < 3; i++) {
+          const angle = Math.PI * 2 * i / 3;
+          const mini = {
+            hostile: true,
+            mini: true,
+            spiky: i === 1,
+            health: splitHealth,
+            maxHealth: splitHealth,
+            shootCooldown: 2,
+            direction: angle
+          };
+          mini.x = boss.x + Math.cos(angle) * 55;
+          mini.y = boss.y + Math.sin(angle) * 55;
+          if (collidesWithFarmObstacle(mini.x, mini.y, 18)) placeChicken(mini, true);
+          chickens.push(mini);
+        }
+        showRewardToast("MUTANT TURKEY SPLIT", "Three smaller infected birds burst out!");
+      }
+
+      function dropBossRewards(boss) {
+        const bossNumber = Math.floor(round / 10);
+        const weaponIds = ["shotgun", "rocket", "plasma", "railgun", "final-cannon"];
+        const weaponId = weaponIds[Math.min(bossNumber - 1, weaponIds.length - 1)];
+        const rewardWeapon = weaponCatalog[weaponId];
+        const damage = Math.max(rewardWeapon.damage, (weapon?.damage || 0) + 1);
+        goldenDrops.push({
+          x: boss.x - 24,
+          y: boss.y,
+          kind: "boss-weapon",
+          weaponId,
+          damage,
+          icon: weaponId === "rocket" || weaponId === "final-cannon" ? "🚀" : weaponId === "plasma" ? "⚡" : weaponId === "railgun" ? "🎯" : "🔫",
+          name: rewardWeapon.name
+        });
+
+        const perks = [
+          { icon: "♥", name: "Heart Harvest", apply: () => { maxHealth++; health = Math.min(maxHealth, health + 2); updateHealthReadout(); } },
+          { icon: "✦", name: "Rooster Rush", apply: () => { moveSpeed += 20; } },
+          { icon: "❄", name: "Frost Crest", apply: () => { freezeChance = Math.min(.75, freezeChance + .25); } },
+          { icon: "💥", name: "Power Crest", apply: () => { if (weapon) weapon.damage++; } },
+          { icon: "🛡", name: "Colonel's Guard", apply: () => { dodgeCharges++; updateDodgeStatus(); } }
+        ];
+        const perk = perks[Math.floor(Math.random() * perks.length)];
+        goldenDrops.push({
+          x: boss.x + 24,
+          y: boss.y,
+          kind: "boss-perk",
+          ...perk
+        });
+        showRewardToast("BOSS DEFEATED", "A new weapon and a powerful perk have dropped!");
+      }
+
+      function equipBossWeapon(drop) {
+        const weaponTemplate = weaponCatalog[drop.weaponId];
+        if (!weaponTemplate) {
+          console.error(`Unknown boss reward weapon: ${drop.weaponId}`);
+          return;
+        }
+        const previousSpeedModifier = weapon?.speedModifier || 0;
+        weapon = {
+          ...weaponTemplate,
+          damage: drop.damage,
+          ammo: weaponTemplate.magazine,
+          reserve: weaponTemplate.reserve
+        };
+        moveSpeed = Math.max(100, moveSpeed + weapon.speedModifier - previousSpeedModifier);
+        weaponCooldown = 0;
+        reloadTimer = 0;
+        weaponRoundsPlayed = 0;
+        weaponControls.hidden = false;
+        weaponHelp.hidden = false;
+        updateWeaponReadout();
+        addActiveEffect(`boss-weapon-${weapon.id}`, "buff", `${weapon.name}: ${weapon.damage} damage`);
+        playTone(920, .2, "triangle");
+        showRewardToast("BOSS WEAPON!", `${weapon.name} · ${weapon.damage} damage`);
+      }
+
+      function fireBossEgg(boss, angle, spread = 0) {
+        const shotAngle = angle + spread;
+        zombieShots.push({
+          x: boss.x + Math.cos(shotAngle) * 24,
+          y: boss.y + Math.sin(shotAngle) * 24,
+          vx: Math.cos(shotAngle) * 205,
+          vy: Math.sin(shotAngle) * 205,
+          radius: 9,
+          life: 4.2,
+          bossShot: true,
+          eggBomb: true,
+          blastRadius: 66,
+          attacker: boss
+        });
+      }
+
+      function detonateBossEgg(shot) {
+        createExplosionEffect(shot.x, shot.y);
+        if (Math.hypot(shot.x - player.x, shot.y - player.y) <= shot.blastRadius) {
+          damagePlayer(2, shot.attacker);
+        }
+      }
+
+      function summonBossChickens(boss) {
+        const nearbyEnemies = chickens.filter(chicken => chicken.hostile).length;
+        if (nearbyEnemies >= 18) return;
+        const summonCount = Math.min(2 + Math.floor(Math.random() * 2), 18 - nearbyEnemies);
+        for (let i = 0; i < summonCount; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 55 + Math.random() * 45;
+          const healthValue = Math.max(2, Math.round(2 * Math.pow(1.05, round - 1)));
+          const minion = {
+            hostile: true,
+            health: healthValue,
+            maxHealth: healthValue,
+            spiky: Math.random() < .25,
+            shootCooldown: 2,
+            x: boss.x + Math.cos(angle) * distance,
+            y: boss.y + Math.sin(angle) * distance
+          };
+          if (collidesWithFarmObstacle(minion.x, minion.y, 20)) placeChicken(minion, true);
+          chickens.push(minion);
+        }
+        showRewardToast(
+          boss.bossAbility === "colonel" ? "FINAL COLONEL REINFORCEMENTS" : "THE FARMER SUMMONS",
+          "Infected chickens are rushing in!"
+        );
       }
 
       function respawnCollectibleChicken(chicken) {
@@ -1313,6 +1822,7 @@
         const index = chickens.indexOf(chicken);
         if (index === -1) return;
         score++;
+        awardXp(5);
         const eggReward = scaleGoldenCoins(5);
         chickenBalance += eggReward;
         updateChickenBalance();
@@ -1329,6 +1839,7 @@
         const perk = chicken.perk;
         const eggReward = perk === "fast" ? 2 : 1;
         score++;
+        awardXp(3);
         chickenBalance += eggReward;
         updateChickenBalance();
         respawnCollectibleChicken(chicken);
@@ -1347,6 +1858,7 @@
           return;
         }
         score++;
+        awardXp(2);
         chickenBalance++;
         updateChickenBalance();
         respawnCollectibleChicken(chicken);
@@ -1362,7 +1874,7 @@
         }
         if (swordCooldown > 0) return;
         let target = null;
-        let nearestDistance = 58;
+        let nearestDistance = swordRange;
         for (const chicken of chickens) {
           if (chicken.hostile) continue;
           const distance = Math.hypot(chicken.x - player.x, chicken.y - player.y);
@@ -1421,13 +1933,112 @@
         return Math.max(1, Math.round(amount * Math.pow(1.1, round - 1)));
       }
 
+      function createImpactEffect(x, y, color, scale = 1) {
+        visualEffects.push({ kind: "ring", x, y, radius: 5, maxRadius: 24 * scale, life: .24, maxLife: .24, color });
+        for (let i = 0; i < 7; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = (45 + Math.random() * 105) * scale;
+          visualEffects.push({
+            kind: "spark",
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: 2 + Math.random() * 2.5,
+            life: .18 + Math.random() * .16,
+            maxLife: .34,
+            color
+          });
+        }
+      }
+
+      function createExplosionEffect(x, y) {
+        visualEffects.push({ kind: "ring", x, y, radius: 8, maxRadius: 76, life: .38, maxLife: .38, color: "#ff9d42" });
+        visualEffects.push({ kind: "ring", x, y, radius: 5, maxRadius: 46, life: .28, maxLife: .28, color: "#ffe27a" });
+        for (let i = 0; i < 18; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 65 + Math.random() * 190;
+          visualEffects.push({
+            kind: "spark",
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: 2 + Math.random() * 4,
+            life: .22 + Math.random() * .24,
+            maxLife: .46,
+            color: Math.random() > .5 ? "#ff9d42" : "#ffe27a"
+          });
+        }
+      }
+
+      function resolveWeaponHit(target, damage) {
+        if (target.hostile) {
+          damageZombie(target, damage);
+          if (freezeChance > 0 && chickens.includes(target) && Math.random() < freezeChance) {
+            target.frozenTimer = 2;
+            createImpactEffect(target.x, target.y, "#a9efff", 1.15);
+          }
+          if (lifeStealEnabled && health < maxHealth && Math.random() < .3) {
+            health = Math.min(maxHealth, health + 1);
+            updateHealthReadout();
+            showRewardToast("LIFE STEAL", "+1 heart");
+            createImpactEffect(player.x, player.y, "#ff6d82", .8);
+          }
+          return;
+        }
+        target.health -= damage;
+        if (target.health > 0) return;
+        if (target.golden) {
+          defeatGoldenChicken(target);
+        } else if (target.perk) {
+          defeatPerkChicken(target);
+        } else {
+          const index = chickens.indexOf(target);
+          if (index >= 0) chickens.splice(index, 1);
+        }
+      }
+
+      function firePlayerProjectile(target, angle) {
+        const speed = weapon.id === "sniper" ? 760 : 620;
+        playerShots.push({
+          x: player.x + Math.cos(angle) * 20,
+          y: player.y + Math.sin(angle) * 20,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          speed,
+          life: 1.4,
+          maxLife: 1.4,
+          distance: 0,
+          maxDistance: weapon.range,
+          target: homingBulletsEnabled ? target : null,
+          damage: weapon.damage,
+          radius: weapon.id === "sniper" ? 5 : 4,
+          color: weapon.projectileColor || (weapon.id === "sniper" ? "#a9efff" : "#ffe27a"),
+          explosive: Boolean(weapon.explosive),
+          pierce: Boolean(weapon.pierce),
+          hitTargets: []
+        });
+        createImpactEffect(player.x + Math.cos(angle) * 18, player.y + Math.sin(angle) * 18, "#fff2a1", .55);
+      }
+
       function damageZombie(chicken, amount) {
         chicken.health -= amount;
         if (chicken.health > 0) return;
         const index = chickens.indexOf(chicken);
         if (index === -1) return;
         chickens.splice(index, 1);
+        chicken.frozenTimer = 0;
+        awardXp(6);
         dropZombieGoldPackage(chicken);
+        if (chicken.bossAbility === "split") spawnMutantSplits(chicken);
+        if (explosiveEnemiesEnabled) {
+          createExplosionEffect(chicken.x, chicken.y);
+          for (const nearby of [...chickens]) {
+            if (!nearby.hostile || Math.hypot(nearby.x - chicken.x, nearby.y - chicken.y) > 76) continue;
+            damageZombie(nearby, Math.max(1, Math.ceil(amount * .65)));
+          }
+        }
         if (!chicken.boss) pendingZombieRespawns.push({ timer: 10, zombie: { ...chicken } });
       }
 
@@ -1435,6 +2046,7 @@
         if (phase !== "playing" || player.invulnerable > 0) return false;
         if (dodgeCharges > 0) {
           dodgeCharges--;
+          awardXp(1);
           updateDodgeStatus();
           playTone(760, .14, "triangle");
           return false;
@@ -1448,6 +2060,12 @@
         }
         updateHealthReadout();
         player.invulnerable = hitProtection + roundHitProtectionBonus;
+        if (secondWindEnabled && secondWindCooldown <= 0) {
+          player.invulnerable = Math.max(player.invulnerable, 3);
+          secondWindCooldown = 30;
+          createImpactEffect(player.x, player.y, "#a9efff", 1.6);
+          showRewardToast("SECOND WIND", "3 seconds of invulnerability!");
+        }
         if (health === 0) {
           phase = "dying";
           deathAnimationElapsed = 0;
@@ -1474,30 +2092,43 @@
 
         weaponCooldown = weapon.cooldown;
         playTone(weapon.id === "knife" ? 480 : weapon.id === "sniper" ? 190 : 310, .055, weapon.id === "knife" ? "triangle" : "square");
-        let target = null;
-        let nearestDistance = weapon.range;
-        for (const chicken of chickens) {
-          if (!chicken.hostile && !chicken.golden && !chicken.perk) continue;
-          const distance = Math.hypot(chicken.x - player.x, chicken.y - player.y);
-          if (distance <= nearestDistance) {
-            target = chicken;
-            nearestDistance = distance;
-          }
-        }
-
-        if (target) {
-          if (target.hostile) damageZombie(target, weapon.damage);
-          else target.health -= weapon.damage;
-          attackEffects.push({ x1: player.x, y1: player.y, x2: target.x, y2: target.y, color: weapon.id === "knife" ? "#fff2a1" : "#ffe17a", time: .12 });
-          if (target.health <= 0) {
-            if (target.golden) {
-              defeatGoldenChicken(target);
-            } else if (target.perk) {
-              defeatPerkChicken(target);
-            } else if (!target.hostile) {
-              chickens.splice(chickens.indexOf(target), 1);
+        const targets = chickens
+          .filter(chicken => chicken.hostile || chicken.golden || chicken.perk)
+          .map(chicken => ({ chicken, distance: Math.hypot(chicken.x - player.x, chicken.y - player.y) }))
+          .filter(item => item.distance <= weapon.range)
+          .sort((first, second) => first.distance - second.distance);
+        const target = targets[0]?.chicken || null;
+        const rangedWeapon = weapon.magazine !== Infinity;
+        if (rangedWeapon) {
+          const targetAngle = target
+            ? Math.atan2(target.y - player.y, target.x - player.x)
+            : player.facing > 0 ? 0 : Math.PI;
+          visualEffects.push({ kind: "muzzle", x: player.x + Math.cos(targetAngle) * 17, y: player.y + Math.sin(targetAngle) * 17, life: .09, maxLife: .09, color: weapon.id === "sniper" ? "#a9efff" : "#ffe27a" });
+          if (weapon.projectile || homingBulletsEnabled || extraProjectiles > 0) {
+            const projectileCount = 1 + extraProjectiles;
+            for (let i = 0; i < projectileCount; i++) {
+              const shotTarget = targets[i]?.chicken || target;
+              let angle = shotTarget
+                ? Math.atan2(shotTarget.y - player.y, shotTarget.x - player.x)
+                : targetAngle;
+              if (!homingBulletsEnabled && projectileCount > 1) {
+                angle += (i - (projectileCount - 1) / 2) * .12;
+              }
+              firePlayerProjectile(shotTarget, angle);
             }
+          } else if (target) {
+            const targetX = target.x;
+            const targetY = target.y;
+            resolveWeaponHit(target, weapon.damage);
+            createImpactEffect(targetX, targetY, weapon.id === "sniper" ? "#a9efff" : "#ffe27a");
+            attackEffects.push({ x1: player.x, y1: player.y, x2: targetX, y2: targetY, color: weapon.id === "sniper" ? "#a9efff" : "#ffe27a", time: .16, width: weapon.id === "sniper" ? 4 : 2 });
           }
+        } else if (target) {
+          const targetX = target.x;
+          const targetY = target.y;
+          resolveWeaponHit(target, weapon.damage);
+          createImpactEffect(targetX, targetY, "#fff2a1");
+          attackEffects.push({ x1: player.x, y1: player.y, x2: targetX, y2: targetY, color: "#fff2a1", time: .16, width: 4 });
         }
         updateWeaponReadout();
       }
@@ -1555,6 +2186,13 @@
         if (offer.requiresWeapon && !weapon) return false;
         if (offer.requiresRangedWeapon && (!weapon || weapon.magazine === Infinity)) return false;
         if (offer.requiresRangeUpgrade && (!weapon || weapon.magazine === Infinity || (!cheatMode && weapon.range >= maximumWeaponRange))) return false;
+        if (offer.id === "double-damage" && activeEffects.has("upgrade-double-damage")) return false;
+        if (offer.id === "homing-bullets" && homingBulletsEnabled) return false;
+        if (offer.id === "extra-projectiles" && extraProjectiles >= 2) return false;
+        if (offer.id === "life-steal" && lifeStealEnabled) return false;
+        if (offer.id === "explosive-enemies" && explosiveEnemiesEnabled) return false;
+        if (offer.id === "frost-rounds" && freezeChance >= .75) return false;
+        if (offer.id === "second-wind" && secondWindEnabled) return false;
         return true;
       }
 
@@ -1665,73 +2303,105 @@
         if (free) upgradeNoteNode.textContent = "All offers purchased. Here is a free reroll!";
       }
 
-      function drawFence() {
-        ctx.fillStyle = "#cfaa68";
-        ctx.fillRect(0, 0, width, 19);
-        ctx.fillRect(0, height - 19, width, 19);
-        ctx.fillRect(0, 0, 19, height);
-        ctx.fillRect(width - 19, 0, 19, height);
-        ctx.fillStyle = "#f2d391";
-        for (let x = 8; x < width; x += 38) {
-          ctx.fillRect(x, 0, 8, 19);
-          ctx.fillRect(x, height - 19, 8, 19);
-        }
-        for (let y = 8; y < height; y += 38) {
-          ctx.fillRect(0, y, 19, 8);
-          ctx.fillRect(width - 19, y, 19, 8);
-        }
-        ctx.strokeStyle = "rgba(105,76,37,.28)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, 8); ctx.lineTo(width, 8);
-        ctx.moveTo(0, height - 8); ctx.lineTo(width, height - 8);
-        ctx.moveTo(8, 0); ctx.lineTo(8, height);
-        ctx.moveTo(width - 8, 0); ctx.lineTo(width - 8, height);
-        ctx.stroke();
-      }
-
       function drawScenery() {
+        const terrainColors = {
+          meadow: "#8fbd61",
+          orchard: "#89b75f",
+          grove: "#779f58",
+          marsh: "#89ad69"
+        };
         ctx.fillStyle = "#8fbd61";
-        ctx.fillRect(0, 0, width, height);
-        for (const mark of grassMarks) {
-          ctx.fillStyle = mark.shade;
-          ctx.beginPath();
-          ctx.ellipse(mark.x, mark.y, mark.size * 1.5, mark.size * .65, -.35, 0, Math.PI * 2);
-          ctx.fill();
+        ctx.fillRect(player.x - width / 2, player.y - height / 2, width, height);
+        for (const chunk of activeWorldChunks) {
+          if (
+            chunk.originX > player.x + width / 2 ||
+            chunk.originX + worldChunkSize < player.x - width / 2 ||
+            chunk.originY > player.y + height / 2 ||
+            chunk.originY + worldChunkSize < player.y - height / 2
+          ) continue;
+          ctx.fillStyle = terrainColors[chunk.terrain];
+          ctx.fillRect(chunk.originX, chunk.originY, worldChunkSize, worldChunkSize);
+          const groundGradient = ctx.createLinearGradient(
+            chunk.originX,
+            chunk.originY,
+            chunk.originX + worldChunkSize * .7,
+            chunk.originY + worldChunkSize
+          );
+          groundGradient.addColorStop(0, "rgba(255,255,220,.08)");
+          groundGradient.addColorStop(1, "rgba(29,65,41,.08)");
+          ctx.fillStyle = groundGradient;
+          ctx.fillRect(chunk.originX, chunk.originY, worldChunkSize, worldChunkSize);
+          for (const mark of chunk.marks) {
+            ctx.fillStyle = mark.shade;
+            ctx.beginPath();
+            ctx.ellipse(mark.x, mark.y, mark.size * 1.5, mark.size * .65, -.35, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          for (const tuft of chunk.tufts) {
+            ctx.save();
+            ctx.translate(tuft.x, tuft.y);
+            ctx.rotate(tuft.angle);
+            ctx.strokeStyle = "rgba(55,103,49,.46)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, 3);
+            ctx.quadraticCurveTo(-tuft.size, -tuft.size * .4, -tuft.size * .55, -tuft.size);
+            ctx.moveTo(1, 3);
+            ctx.quadraticCurveTo(tuft.size * .7, -tuft.size * .25, tuft.size, -tuft.size * .8);
+            ctx.stroke();
+            if (tuft.flower) {
+              ctx.fillStyle = "#f3df8a";
+              ctx.beginPath();
+              ctx.arc(0, -tuft.size * .65, 2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+          for (const tree of chunk.trees) {
+            ctx.fillStyle = "rgba(37,61,36,.2)";
+            ctx.beginPath();
+            ctx.ellipse(tree.x + 5, tree.y + tree.radius * .72, tree.radius * 1.05, tree.radius * .42, -.15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#76543a";
+            ctx.fillRect(tree.x - 4, tree.y + 2, 8, tree.radius * .9);
+            ctx.fillStyle = chunk.terrain === "grove" ? "#456f42" : "#547f43";
+            ctx.beginPath();
+            ctx.arc(tree.x, tree.y, tree.radius, 0, Math.PI * 2);
+            ctx.arc(tree.x - tree.radius * .52, tree.y + 3, tree.radius * .66, 0, Math.PI * 2);
+            ctx.arc(tree.x + tree.radius * .48, tree.y + 5, tree.radius * .7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "rgba(180,205,111,.26)";
+            ctx.beginPath();
+            ctx.arc(tree.x - tree.radius * .24, tree.y - tree.radius * .28, tree.radius * .44, 0, Math.PI * 2);
+            ctx.fill();
+            if (tree.fruit && chunk.terrain === "orchard") {
+              ctx.fillStyle = "#d9664e";
+              ctx.beginPath();
+              ctx.arc(tree.x + tree.radius * .35, tree.y + 2, 3, 0, Math.PI * 2);
+              ctx.arc(tree.x - tree.radius * .3, tree.y + tree.radius * .35, 2.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+          if (chunk.secretArea && chunk.secretArea.discovered) {
+            ctx.fillStyle = "rgba(231,207,111,.34)";
+            ctx.beginPath();
+            ctx.ellipse(chunk.secretArea.x, chunk.secretArea.y, 96, 66, -.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(240,222,145,.65)";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(chunk.secretArea.x, chunk.secretArea.y, 72, 48, -.2, 0, Math.PI * 2);
+            ctx.stroke();
+          }
         }
-
-        ctx.fillStyle = "rgba(205,170,104,.28)";
-        ctx.beginPath();
-        ctx.ellipse(174, 400, 113, 36, -.17, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#d8ba76";
-        ctx.beginPath();
-        ctx.ellipse(790, 108, 38, 24, -.14, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#a17d45";
-        ctx.fillRect(754, 104, 72, 5);
-        ctx.fillStyle = "#ebd99a";
-        ctx.fillRect(758, 92, 65, 13);
-        ctx.fillRect(762, 85, 56, 9);
-
-        ctx.fillStyle = "#5f9b55";
-        ctx.beginPath();
-        ctx.ellipse(790, 430, 88, 34, .2, 0, Math.PI * 2);
-        ctx.fill();
-        for (let i = 0; i < 8; i++) {
-          const x = 730 + i * 17;
-          const y = 415 + (i % 3) * 10;
-          ctx.strokeStyle = "#d5df75";
-          ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.moveTo(x, y + 12); ctx.lineTo(x + 3, y); ctx.stroke();
-        }
-        drawFence();
       }
 
       function drawFarmObstacles() {
-        if (round <= 10) return;
         for (const obstacle of farmObstacles) {
           ctx.save();
+          ctx.shadowColor = "rgba(35,47,29,.28)";
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetY = 5;
           if (obstacle.type === "hay") {
             ctx.fillStyle = "#d5a64e";
             ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
@@ -1786,11 +2456,19 @@
       function drawChicken(chicken) {
         const bob = Math.sin(chicken.flap) * 1.7;
         const skin = chickenSkinPalettes[chickenSkin];
-        const featherColor = chicken.golden ? "#f2c94c" : chicken.hostile ? "#a3ae78" : chicken.perk === "fast" ? "#f2c94c" : chicken.perk === "zigzag" ? "#8bd0e8" : skin.body;
+        const featherColor = chicken.boss ? chicken.bossColor : chicken.golden ? "#f2c94c" : chicken.hostile ? "#a3ae78" : chicken.perk === "fast" ? "#f2c94c" : chicken.perk === "zigzag" ? "#8bd0e8" : skin.body;
         const wingColor = chicken.hostile ? "#778656" : chicken.golden ? "#d2a51f" : chicken.perk === "fast" ? "#e97852" : chicken.perk === "zigzag" ? "#6862a8" : skin.wing;
         ctx.save();
         ctx.translate(chicken.x, chicken.y + bob);
         if (chicken.boss) ctx.scale(1.8, 1.8);
+        else if (chicken.mini) ctx.scale(.72, .72);
+        if (chicken.boss && chicken.chargeTimer > 0) {
+          ctx.strokeStyle = `rgba(255,131,55,${.55 + Math.sin(elapsed * 18) * .3})`;
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath(); ctx.ellipse(0, 0, 30, 21, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.setLineDash([]);
+        }
         if (chicken.spiky) {
           ctx.fillStyle = "#493a31";
           for (let i = 0; i < 8; i++) {
@@ -1812,20 +2490,32 @@
         ctx.moveTo(-5, 9); ctx.lineTo(-6, 14); ctx.lineTo(-9, 15);
         ctx.moveTo(5, 9); ctx.lineTo(6, 14); ctx.lineTo(9, 15);
         ctx.stroke();
-        ctx.fillStyle = featherColor;
-        ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
+        const featherGradient = ctx.createLinearGradient(-8, -12, 10, 12);
+        featherGradient.addColorStop(0, chicken.golden ? "#fff0a0" : "#fffdf2");
+        featherGradient.addColorStop(.38, featherColor);
+        featherGradient.addColorStop(1, chicken.hostile ? "#75885d" : chicken.perk === "zigzag" ? "#68a9c5" : "#c5bd9b");
+        ctx.fillStyle = featherGradient;
+        ctx.strokeStyle = chicken.hostile ? "#536441" : "rgba(73,58,49,.34)";
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         ctx.fillStyle = wingColor;
         ctx.beginPath(); ctx.ellipse(-5, 1, 7, 5, -.3, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = featherColor;
-        ctx.beginPath(); ctx.arc(10, -8, 8, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = chicken.hostile ? "#743f4b" : chicken.golden ? "#d89d20" : skin.comb;
-        ctx.beginPath(); ctx.arc(7, -16, 3, 0, Math.PI * 2); ctx.arc(12, -17, 3, 0, Math.PI * 2); ctx.arc(16, -14, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(255,249,228,.55)";
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(-9, 1); ctx.quadraticCurveTo(-5, -2, -1, 0); ctx.stroke();
+        ctx.fillStyle = featherGradient;
+        ctx.beginPath(); ctx.arc(10, -8, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = chicken.boss ? "#f2c94c" : chicken.hostile ? "#743f4b" : chicken.golden ? "#d89d20" : skin.comb;
+        const crestHeight = chicken.boss ? -24 : -16;
+        ctx.beginPath(); ctx.arc(7, crestHeight, chicken.boss ? 5 : 3, 0, Math.PI * 2); ctx.arc(12, crestHeight - 1, chicken.boss ? 5 : 3, 0, Math.PI * 2); ctx.arc(17, crestHeight + 2, chicken.boss ? 5 : 3, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = chicken.hostile ? "#819052" : chicken.golden ? "#e7b52e" : skin.beak;
         ctx.beginPath(); ctx.moveTo(17, -8); ctx.lineTo(24, -5); ctx.lineTo(17, -3); ctx.closePath(); ctx.fill();
         ctx.fillStyle = chicken.hostile ? "#e2504a" : chicken.golden ? "#493a31" : "#263b30";
         ctx.beginPath(); ctx.arc(12, -10, chicken.hostile ? 2.2 : 1.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,.82)";
+        ctx.beginPath(); ctx.arc(12.5, -10.6, .65, 0, Math.PI * 2); ctx.fill();
         if (chicken.hostile || chicken.golden || chicken.perk) {
-          const barWidth = chicken.boss ? 40 : 32;
+          const barWidth = chicken.boss ? 62 : chicken.mini ? 24 : 32;
           const healthRatio = Math.max(0, chicken.health / chicken.maxHealth);
           ctx.fillStyle = "#493a31";
           ctx.fillRect(-barWidth / 2, -36, barWidth, 4);
@@ -1835,7 +2525,7 @@
             ctx.fillStyle = "#fff9e4";
             ctx.font = "bold 9px Trebuchet MS, sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(chicken.golden ? "GOLD" : chicken.boss ? "BOSS" : "!", 0, -42);
+            ctx.fillText(chicken.golden ? "GOLD" : chicken.boss ? chicken.bossName : "!", 0, chicken.boss ? -50 : -42);
           }
         }
         if (chicken.perk) {
@@ -1873,6 +2563,17 @@
           ctx.fillRect(4, 6, 3, 5);
           ctx.restore();
         }
+        if (chicken.hostile && chicken.frozenTimer > 0) {
+          ctx.fillStyle = "rgba(151,231,255,.48)";
+          ctx.strokeStyle = "rgba(214,250,255,.9)";
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.ellipse(0, -2, 20, 19, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = "#e9fcff";
+          ctx.font = "bold 12px Trebuchet MS, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("❄", -15, -17);
+          ctx.fillText("❄", 15, -22);
+        }
         ctx.restore();
       }
 
@@ -1895,10 +2596,27 @@
         if (phase === "playing" && player.invulnerable > 0 && Math.floor(elapsed * 12) % 2 === 0) ctx.globalAlpha = .4;
         ctx.fillStyle = "rgba(40,67,38,.2)";
         ctx.beginPath(); ctx.ellipse(0, 18, 19, 7, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = dying ? `rgb(${Math.round(55 - infection * 25)}, ${Math.round(111 + infection * 25)}, ${Math.round(80 - infection * 25)})` : skin.shirt;
-        ctx.beginPath(); ctx.ellipse(0, 7, 13, 15, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = dying ? `rgb(${Math.round(242 - infection * 130)}, ${Math.round(201 - infection * 65)}, ${Math.round(162 - infection * 95)})` : skin.face;
+        ctx.fillStyle = dying ? "#426c54" : skin.shirt;
+        ctx.strokeStyle = "rgba(32,59,45,.75)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.ellipse(0, 7, 13, 15, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.save();
+        ctx.beginPath(); ctx.ellipse(0, 7, 13, 15, 0, 0, Math.PI * 2); ctx.clip();
+        const shirtHighlight = ctx.createLinearGradient(-10, -8, 11, 14);
+        shirtHighlight.addColorStop(0, "rgba(255,255,255,.25)");
+        shirtHighlight.addColorStop(.55, "rgba(255,255,255,0)");
+        shirtHighlight.addColorStop(1, "rgba(20,35,27,.24)");
+        ctx.fillStyle = shirtHighlight;
+        ctx.fillRect(-14, -9, 28, 33);
+        ctx.restore();
+        const faceGradient = ctx.createLinearGradient(-5, -17, 7, 2);
+        faceGradient.addColorStop(0, dying ? "#f2c99e" : "#ffe0b4");
+        faceGradient.addColorStop(1, dying ? "#8f735e" : skin.face);
+        ctx.fillStyle = faceGradient;
         ctx.beginPath(); ctx.arc(0, -9, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(73,58,49,.55)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
         ctx.fillStyle = "#de7454";
         ctx.fillRect(-11, 0, 22, 4);
         ctx.fillStyle = skin.brim;
@@ -1960,6 +2678,86 @@
         ctx.restore();
       }
 
+      function drawChickenArrow() {
+        let target = null;
+        let nearestDistance = Infinity;
+        for (const chicken of chickens) {
+          if (chicken.hostile) continue;
+          const distance = Math.hypot(chicken.x - player.x, chicken.y - player.y);
+          if (distance < nearestDistance) {
+            target = chicken;
+            nearestDistance = distance;
+          }
+        }
+        if (!target || nearestDistance < 45) return;
+
+        const angle = Math.atan2(target.y - player.y, target.x - player.x);
+        const markerX = Math.cos(angle) * 55;
+        const markerY = Math.sin(angle) * 55 - 8;
+        ctx.save();
+        ctx.translate(player.x + markerX, player.y + markerY);
+        ctx.fillStyle = "rgba(32,59,45,.92)";
+        ctx.beginPath();
+        ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#fff9e4";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.rotate(angle + Math.PI / 2);
+        ctx.fillStyle = "#d9ee78";
+        ctx.beginPath();
+        ctx.moveTo(0, -11);
+        ctx.lineTo(8, 8);
+        ctx.lineTo(0, 4);
+        ctx.lineTo(-8, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.fillStyle = "#fff9e4";
+        ctx.strokeStyle = "rgba(32,59,45,.95)";
+        ctx.lineWidth = 3;
+        ctx.font = "bold 9px Trebuchet MS, sans-serif";
+        ctx.textAlign = "center";
+        ctx.lineJoin = "round";
+        ctx.strokeText("CHICKEN", player.x + markerX, player.y + markerY - 21);
+        ctx.fillText("CHICKEN", player.x + markerX, player.y + markerY - 21);
+        ctx.restore();
+      }
+
+      function drawBossLootIndicators() {
+        for (const drop of goldenDrops) {
+          if (drop.kind !== "boss-weapon" && drop.kind !== "boss-perk") continue;
+          const dx = drop.x - player.x;
+          const dy = drop.y - player.y;
+          const screenX = width / 2 + dx;
+          const screenY = height / 2 + dy;
+          if (screenX >= 34 && screenX <= width - 34 && screenY >= 112 && screenY <= height - 48) continue;
+          const angle = Math.atan2(dy, dx);
+          const distanceToEdge = Math.min(
+            (width / 2 - 38) / Math.max(.001, Math.abs(Math.cos(angle))),
+            ((Math.sin(angle) < 0 ? height / 2 - 112 : height / 2 - 48) / Math.max(.001, Math.abs(Math.sin(angle))))
+          );
+          const x = width / 2 + Math.cos(angle) * distanceToEdge;
+          const y = height / 2 + Math.sin(angle) * distanceToEdge;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(angle);
+          ctx.fillStyle = drop.kind === "boss-weapon" ? "#a9efff" : "#f4d875";
+          ctx.strokeStyle = "rgba(32,59,45,.95)";
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(13, 0);
+          ctx.lineTo(-7, -8);
+          ctx.lineTo(-3, 0);
+          ctx.lineTo(-7, 8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
       function drawOverlay(title, subtitle) {
         ctx.fillStyle = "rgba(29,54,39,.34)";
         ctx.fillRect(19, 19, width - 38, height - 38);
@@ -1973,10 +2771,49 @@
       }
 
       function render() {
+        ctx.save();
+        ctx.translate(width / 2 - player.x, height / 2 - player.y);
         drawScenery();
         drawFarmObstacles();
-        for (const chicken of chickens) drawChicken(chicken);
+        for (const chunk of activeWorldChunks) {
+          const cache = chunk.cache;
+          if (!cache) continue;
+          if (!cache.discovered || cache.collected) continue;
+          ctx.fillStyle = "rgba(49,39,24,.25)";
+          ctx.beginPath(); ctx.ellipse(cache.x, cache.y + 12, 19, 6, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#795335";
+          ctx.fillRect(cache.x - 15, cache.y - 10, 30, 22);
+          ctx.fillStyle = "#d6a53f";
+          ctx.fillRect(cache.x - 12, cache.y - 13, 24, 19);
+          ctx.fillStyle = "#f4d875";
+          ctx.fillRect(cache.x - 3, cache.y - 12, 6, 18);
+          ctx.fillStyle = "#fff9e4";
+          ctx.font = "bold 11px Trebuchet MS, sans-serif";
+          ctx.textAlign = "center";
+          ctx.strokeStyle = "rgba(32,59,45,.85)";
+          ctx.lineWidth = 3;
+          ctx.strokeText("HIDDEN STASH", cache.x, cache.y - 24);
+          ctx.fillText("HIDDEN STASH", cache.x, cache.y - 24);
+        }
+        for (const chicken of chickens) {
+          if (Math.abs(chicken.x - player.x) <= width && Math.abs(chicken.y - player.y) <= height) drawChicken(chicken);
+        }
+        for (const shot of playerShots) {
+          ctx.save();
+          ctx.translate(shot.x, shot.y);
+          ctx.rotate(Math.atan2(shot.vy, shot.vx));
+          ctx.shadowColor = shot.color;
+          ctx.shadowBlur = 12;
+          ctx.strokeStyle = shot.color;
+          ctx.lineWidth = shot.radius * 1.4;
+          ctx.lineCap = "round";
+          ctx.beginPath(); ctx.moveTo(-17, 0); ctx.lineTo(3, 0); ctx.stroke();
+          ctx.fillStyle = "#fffdf1";
+          ctx.beginPath(); ctx.arc(2, 0, shot.radius * .7, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
         for (const drop of goldenDrops) {
+          if (Math.abs(drop.x - player.x) > width || Math.abs(drop.y - player.y) > height) continue;
           if (drop.kind === "gold-package") {
             ctx.save();
             ctx.translate(drop.x, drop.y);
@@ -2004,6 +2841,34 @@
             ctx.restore();
             continue;
           }
+          if (drop.kind === "boss-weapon" || drop.kind === "boss-perk") {
+            const color = drop.kind === "boss-weapon" ? "#a9efff" : "#f4d875";
+            const bob = Math.sin(elapsed * 5 + drop.x) * 3;
+            ctx.save();
+            ctx.translate(drop.x, drop.y + bob);
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 16;
+            ctx.fillStyle = "rgba(32,59,45,.92)";
+            ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.font = "bold 15px Trebuchet MS, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "#fffdf1";
+            ctx.fillText(drop.icon, 0, 1);
+            ctx.font = "bold 8px Trebuchet MS, sans-serif";
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "rgba(32,59,45,.9)";
+            const label = drop.name.toUpperCase();
+            ctx.strokeText(label, 0, -25);
+            ctx.fillStyle = color;
+            ctx.fillText(label, 0, -25);
+            ctx.restore();
+            continue;
+          }
           ctx.fillStyle = drop.kind === "coins" ? "#f2c94c" : "#63a958";
           ctx.beginPath(); ctx.arc(drop.x, drop.y, 11, 0, Math.PI * 2); ctx.fill();
           ctx.strokeStyle = "#fff9e4";
@@ -2017,10 +2882,30 @@
           ctx.textBaseline = "alphabetic";
         }
         for (const shot of zombieShots) {
-          ctx.fillStyle = shot.bossShot ? "#111111" : "#493a31";
-          ctx.beginPath(); ctx.arc(shot.x, shot.y, shot.radius + 2, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = shot.bossShot ? "#e32636" : "#f2c965";
-          ctx.beginPath(); ctx.arc(shot.x, shot.y, shot.radius, 0, Math.PI * 2); ctx.fill();
+          if (Math.abs(shot.x - player.x) > width || Math.abs(shot.y - player.y) > height) continue;
+          ctx.save();
+          ctx.translate(shot.x, shot.y);
+          ctx.rotate(Math.atan2(shot.vy, shot.vx));
+          ctx.shadowColor = shot.bossShot ? "#ff354d" : "#ffd66b";
+          ctx.shadowBlur = 10;
+          ctx.strokeStyle = shot.bossShot ? "rgba(227,38,54,.55)" : "rgba(242,201,101,.62)";
+          ctx.lineWidth = shot.eggBomb ? shot.radius * 2 : shot.radius * 1.6;
+          ctx.lineCap = "round";
+          ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(2, 0); ctx.stroke();
+          if (shot.eggBomb) {
+            ctx.fillStyle = "#f4e7b9";
+            ctx.beginPath(); ctx.ellipse(2, 0, shot.radius * .8, shot.radius, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#d9664e";
+            ctx.fillRect(-1, -2, 6, 4);
+            ctx.fillStyle = "#fffdf1";
+            ctx.beginPath(); ctx.arc(2, -3, 2, 0, Math.PI * 2); ctx.fill();
+          } else {
+            ctx.fillStyle = shot.bossShot ? "#ff354d" : "#f2c965";
+            ctx.beginPath(); ctx.arc(2, 0, shot.radius, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#fff8d8";
+            ctx.beginPath(); ctx.arc(3, -1, shot.radius * .4, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.restore();
         }
         if (phase === "playing" && pickupRadius > 25) {
           ctx.save();
@@ -2031,6 +2916,49 @@
           ctx.restore();
         }
         drawPlayer();
+        if (phase === "playing" || phase === "countdown") drawChickenArrow();
+        for (const effect of attackEffects) {
+          ctx.save();
+          ctx.globalAlpha = Math.min(1, effect.time / .16);
+          ctx.strokeStyle = effect.color;
+          ctx.shadowColor = effect.color;
+          ctx.shadowBlur = 12;
+          ctx.lineWidth = effect.width || 3;
+          ctx.lineCap = "round";
+          ctx.beginPath(); ctx.moveTo(effect.x1, effect.y1); ctx.lineTo(effect.x2, effect.y2); ctx.stroke();
+          ctx.restore();
+        }
+        for (const effect of visualEffects) {
+          const alpha = Math.max(0, effect.life / effect.maxLife);
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          if (effect.kind === "ring") {
+            ctx.strokeStyle = effect.color;
+            ctx.shadowColor = effect.color;
+            ctx.shadowBlur = 10;
+            ctx.lineWidth = 3 * alpha;
+            ctx.beginPath(); ctx.arc(effect.x, effect.y, effect.radius, 0, Math.PI * 2); ctx.stroke();
+          } else if (effect.kind === "spark") {
+            ctx.fillStyle = effect.color;
+            ctx.shadowColor = effect.color;
+            ctx.shadowBlur = 8;
+            ctx.beginPath(); ctx.arc(effect.x, effect.y, effect.size * alpha, 0, Math.PI * 2); ctx.fill();
+          } else if (effect.kind === "muzzle") {
+            ctx.fillStyle = effect.color;
+            ctx.shadowColor = effect.color;
+            ctx.shadowBlur = 18;
+            ctx.beginPath(); ctx.arc(effect.x, effect.y, 3 + 8 * alpha, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
+        drawBossLootIndicators();
+        const vignette = ctx.createRadialGradient(width / 2, height / 2, height * .22, width / 2, height / 2, width * .72);
+        vignette.addColorStop(0, "rgba(23,43,30,0)");
+        vignette.addColorStop(1, "rgba(23,43,30,.19)");
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, width, height);
         if (phase === "ready") drawOverlay("Ready to practise?", "START YOUR NUMBER CHALLENGE WHEN YOU'RE READY");
         if (phase === "countdown") drawOverlay("Get ready!", String(Math.ceil(countdownRemaining)));
         if (phase === "paused") drawOverlay("Practice paused", "YOUR SESSION IS PAUSED");
@@ -2039,13 +2967,6 @@
         if (phase === "armor") drawOverlay("Choose your armor!", "PICK YOUR ARMOR FOR ROUND 15");
         if (phase === "dying") drawOverlay("The infection takes hold...", "ROWAN STAGGERS, TURNS, AND FALLS");
         if (phase === "gameover") drawOverlay("Practice complete!", `${score} points earned across ${round} sets`);
-        for (const effect of attackEffects) {
-          ctx.strokeStyle = effect.color;
-          ctx.globalAlpha = Math.min(1, effect.time / .12);
-          ctx.lineWidth = weapon?.id === "knife" ? 4 : 3;
-          ctx.beginPath(); ctx.moveTo(effect.x1, effect.y1); ctx.lineTo(effect.x2, effect.y2); ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
         if (celebration > 0) {
           ctx.fillStyle = `rgba(255,249,228,${celebration * .3})`;
           ctx.fillRect(19, 19, width - 38, height - 38);
@@ -2071,6 +2992,20 @@ function bulletHitsFarmObstacle(shot) {
       function update(delta) {
         elapsed += delta;
         updateHealthRegeneration(delta);
+        secondWindCooldown = Math.max(0, secondWindCooldown - delta);
+        for (let i = visualEffects.length - 1; i >= 0; i--) {
+          const effect = visualEffects[i];
+          effect.life -= delta;
+          if (effect.kind === "spark") {
+            effect.x += effect.vx * delta;
+            effect.y += effect.vy * delta;
+            effect.vx *= .94;
+            effect.vy *= .94;
+          } else if (effect.kind === "ring") {
+            effect.radius = effect.maxRadius * (1 - effect.life / effect.maxLife);
+          }
+          if (effect.life <= 0) visualEffects.splice(i, 1);
+        }
         if (celebration > 0) celebration = Math.max(0, celebration - delta * 2.3);
         player.invulnerable = Math.max(0, player.invulnerable - delta);
         weaponCooldown = Math.max(0, weaponCooldown - delta);
@@ -2092,10 +3027,11 @@ function bulletHitsFarmObstacle(shot) {
         const vertical = (keys.has("ArrowDown") ? 1 : 0) - (keys.has("ArrowUp") ? 1 : 0) + touchInput.y;
         const length = Math.hypot(horizontal, vertical) || 1;
         const playerMoveSpeed = moveSpeed + roundSpeedBonus;
-        const nextPlayerX = Math.max(playerWallMarginX, Math.min(width - playerWallMarginX, player.x + horizontal / length * playerMoveSpeed * delta));
+        const nextPlayerX = player.x + horizontal / length * playerMoveSpeed * delta;
         if (!collidesWithFarmObstacle(nextPlayerX, player.y, playerRadius)) player.x = nextPlayerX;
-        const nextPlayerY = Math.max(playerWallMarginY, Math.min(height - playerWallMarginY, player.y + vertical / length * playerMoveSpeed * delta));
+        const nextPlayerY = player.y + vertical / length * playerMoveSpeed * delta;
         if (!collidesWithFarmObstacle(player.x, nextPlayerY, playerRadius)) player.y = nextPlayerY;
+        ensureWorldChunks();
         if (horizontal) player.facing = Math.sign(horizontal);
 
         for (let i = pendingZombieRespawns.length - 1; i >= 0; i--) {
@@ -2117,11 +3053,15 @@ function bulletHitsFarmObstacle(shot) {
         for (const chicken of chickens) {
           const previousX = chicken.x;
           const previousY = chicken.y;
+          if (Math.abs(chicken.x - player.x) > 1200 || Math.abs(chicken.y - player.y) > 1200) continue;
           chicken.flap += delta * 9;
           const dx = chicken.x - player.x;
           const dy = chicken.y - player.y;
           const distance = Math.hypot(dx, dy);
           if (chicken.hostile) {
+            if (chicken.frozenTimer > 0) {
+              chicken.frozenTimer = Math.max(0, chicken.frozenTimer - delta);
+            } else {
             const chaseX = -dx / (distance || 1);
             const chaseY = -dy / (distance || 1);
             const separation = getZombieSeparation(chicken);
@@ -2130,32 +3070,69 @@ function bulletHitsFarmObstacle(shot) {
               chaseX + separation.x * 2.2
             ) + Math.sin(elapsed * 4 + chicken.flap) * .12;
             chicken.aimAngle = Math.atan2(-dy, -dx);
-            if (chicken.gunner || chicken.boss) {
+            if (chicken.boss) {
+              chicken.abilityCooldown -= delta;
+              if (chicken.bossAbility === "colonel") {
+                chicken.summonCooldown -= delta;
+                if (chicken.summonCooldown <= 0) {
+                  summonBossChickens(chicken);
+                  chicken.summonCooldown = 8;
+                }
+              }
+              if (chicken.bossAbility === "charge") {
+                if (chicken.chargeTimer <= 0 && chicken.abilityCooldown <= 0) {
+                  chicken.chargeTimer = 1.15;
+                  chicken.abilityCooldown = 3.8;
+                  chicken.direction = Math.atan2(player.y - chicken.y, player.x - chicken.x);
+                }
+                if (chicken.chargeTimer > 0) {
+                  chicken.chargeTimer = Math.max(0, chicken.chargeTimer - delta);
+                  chicken.direction = Math.atan2(player.y - chicken.y, player.x - chicken.x);
+                }
+              } else if (chicken.bossAbility === "summon" && chicken.abilityCooldown <= 0) {
+                summonBossChickens(chicken);
+                chicken.abilityCooldown = 7;
+              } else if (chicken.bossAbility === "explosive-eggs" && chicken.abilityCooldown <= 0) {
+                fireBossEgg(chicken, Math.atan2(player.y - chicken.y, player.x - chicken.x));
+                chicken.abilityCooldown = 2.5;
+              } else if (chicken.bossAbility === "colonel" && chicken.abilityCooldown <= 0) {
+                const shotAngle = Math.atan2(player.y - chicken.y, player.x - chicken.x);
+                fireBossEgg(chicken, shotAngle, -.2);
+                fireBossEgg(chicken, shotAngle);
+                fireBossEgg(chicken, shotAngle, .2);
+                chicken.abilityCooldown = 2.8;
+              }
+            }
+            if (chicken.gunner) {
               chicken.shootCooldown -= delta;
               if (chicken.shootCooldown <= 0) {
                 const shotAngle = Math.atan2(player.y - chicken.y, player.x - chicken.x);
                 const bossShot = Boolean(chicken.boss);
-                const shotSpeed = bossShot ? 72 : 145;
+                const shotSpeed = 145;
                 zombieShots.push({
                   x: chicken.x + Math.cos(shotAngle) * 20,
                   y: chicken.y + Math.sin(shotAngle) * 20,
                   vx: Math.cos(shotAngle) * shotSpeed,
                   vy: Math.sin(shotAngle) * shotSpeed,
                   radius: 6,
-                  life: bossShot ? 18 : 6,
+                  life: 6,
                   bossShot,
                   attacker: chicken
                 });
-                chicken.shootCooldown = bossShot ? 3.2 : 2.1;
+                chicken.shootCooldown = bossShot ? 1.8 : 2.1;
               }
             }
             const slowZombie = chicken.spiky || chicken.gunner || chicken.boss;
             const baseSpeed = slowZombie ? playerMoveSpeed * .5 : Math.min(145, 75 + round * 8);
             const waveSpeed = baseSpeed * Math.pow(1.05, round - 1);
             const playerSpeedCap = playerMoveSpeed * (slowZombie ? .9 : .95);
-            const speed = Math.max(playerMoveSpeed * .5, Math.min(waveSpeed, playerSpeedCap) * zombieSpeedFactor);
+            let speed = Math.max(playerMoveSpeed * .5, Math.min(waveSpeed, playerSpeedCap) * zombieSpeedFactor);
+            if (chicken.bossAbility === "charge" && chicken.chargeTimer > 0) speed *= 2.6;
+            if (chicken.bossAbility === "colonel") speed *= 1.15;
+            if (chicken.mini) speed *= 1.2;
             chicken.x += Math.cos(chicken.direction) * speed * delta;
             chicken.y += Math.sin(chicken.direction) * speed * delta;
+            }
           } else if (chicken.perk === "fast") {
             chicken.direction = Math.atan2(dy, dx);
             const chickenSpeed = playerMoveSpeed * .95;
@@ -2182,16 +3159,9 @@ function bulletHitsFarmObstacle(shot) {
             chicken.x += Math.cos(chicken.direction) * 20 * delta;
             chicken.y += Math.sin(chicken.direction) * 20 * delta;
           }
-          if (chicken.enteringFromOffscreen && chicken.x >= 39 && chicken.x <= width - 39 && chicken.y >= 43 && chicken.y <= height - 43) {
-            chicken.enteringFromOffscreen = false;
-          }
-          if (!chicken.enteringFromOffscreen) {
-            chicken.x = Math.max(39, Math.min(width - 39, chicken.x));
-            chicken.y = Math.max(43, Math.min(height - 43, chicken.y));
-          }
-          const collisionRadius = chicken.boss ? 32 : chicken.spiky ? 24 : chicken.golden ? 18 : 16;
+          const collisionRadius = chicken.boss ? 32 : chicken.mini ? 12 : chicken.spiky ? 24 : chicken.golden ? 18 : 16;
           resolveChickenObstacleCollision(chicken, previousX, previousY, collisionRadius);
-          if (chicken.hostile && distance < (chicken.boss ? 42 : 28) && player.invulnerable <= 0) {
+          if (chicken.hostile && distance < (chicken.boss ? 42 : chicken.mini ? 23 : 28) && player.invulnerable <= 0) {
             damagePlayer(chicken.spiky ? 2 : 1, chicken);
             chicken.x -= Math.cos(chicken.direction) * 55;
             chicken.y -= Math.sin(chicken.direction) * 55;
@@ -2203,6 +3173,28 @@ function bulletHitsFarmObstacle(shot) {
 
         if (phase === "playing") updateSword(delta);
         if (phase !== "playing") return;
+        for (const chunk of activeWorldChunks) {
+          if (
+            chunk.secretArea &&
+            !chunk.secretArea.discovered &&
+            Math.hypot(chunk.secretArea.x - player.x, chunk.secretArea.y - player.y) < 140
+          ) {
+            chunk.secretArea.discovered = true;
+            showRewardToast("SECRET CLEARING", "A hidden trail leads to a stash nearby.");
+          }
+          const cache = chunk.cache;
+          if (!cache) continue;
+          if (cache.collected) continue;
+          const distance = Math.hypot(cache.x - player.x, cache.y - player.y);
+          if (distance < 78) cache.discovered = true;
+          if (distance >= 30) continue;
+          cache.collected = true;
+          chickenBalance += cache.amount;
+          awardXp(10);
+          updateChickenBalance();
+          playTone(790, .12, "triangle");
+          showRewardToast("HIDDEN STASH FOUND", `+${cache.amount} eggs and 10 XP.`);
+        }
         for (let i = goldenDrops.length - 1; i >= 0; i--) {
           const drop = goldenDrops[i];
           if (Math.hypot(drop.x - player.x, drop.y - player.y) >= pickupRadius + 11) continue;
@@ -2210,32 +3202,87 @@ function bulletHitsFarmObstacle(shot) {
             chickenBalance += drop.amount;
             playTone(790, .1, "triangle");
             showRewardToast("BONUS COLLECTED", `+${drop.amount} eggs added to your balance.`);
+          } else if (drop.kind === "boss-weapon") {
+            equipBossWeapon(drop);
+            goldenDrops.splice(i, 1);
+            updateChickenBalance();
+            continue;
           } else {
             drop.apply();
             playTone(560, .12, "sine");
-            showRewardToast("BONUS COLLECTED", "A new effect is ready.");
+            if (drop.kind === "boss-perk") {
+              addActiveEffect(`boss-perk-${drop.name}`, "buff", drop.name);
+              showRewardToast(`${drop.name.toUpperCase()} UNLOCKED`, "Boss perk added to your run!");
+            } else {
+              showRewardToast("BONUS COLLECTED", "A new effect is ready.");
+            }
           }
           goldenDrops.splice(i, 1);
           updateChickenBalance();
           updateHealthReadout();
+        }
+        for (let i = playerShots.length - 1; i >= 0; i--) {
+          const shot = playerShots[i];
+          if (shot.target && chickens.includes(shot.target) && homingBulletsEnabled) {
+            const desiredAngle = Math.atan2(shot.target.y - shot.y, shot.target.x - shot.x);
+            shot.vx = Math.cos(desiredAngle) * shot.speed;
+            shot.vy = Math.sin(desiredAngle) * shot.speed;
+          }
+          const stepX = shot.vx * delta;
+          const stepY = shot.vy * delta;
+          shot.x += stepX;
+          shot.y += stepY;
+          shot.distance += Math.hypot(stepX, stepY);
+          shot.life -= delta;
+          const hitTarget = chickens.find(chicken =>
+            (chicken.hostile || chicken.golden || chicken.perk) &&
+          !shot.hitTargets.includes(chicken) &&
+          Math.hypot(chicken.x - shot.x, chicken.y - shot.y) < shot.radius + (chicken.boss ? 26 : 15)
+          );
+          if (hitTarget) {
+          resolveWeaponHit(hitTarget, shot.damage);
+          createImpactEffect(shot.x, shot.y, shot.color);
+          shot.hitTargets.push(hitTarget);
+          if (shot.explosive) {
+            createExplosionEffect(shot.x, shot.y);
+            for (const nearby of [...chickens]) {
+              if (!nearby.hostile || nearby === hitTarget || Math.hypot(nearby.x - shot.x, nearby.y - shot.y) > 82) continue;
+              resolveWeaponHit(nearby, Math.max(1, Math.ceil(shot.damage * .55)));
+            }
+            playerShots.splice(i, 1);
+          } else if (!shot.pierce) {
+            playerShots.splice(i, 1);
+          }
+          } else if (
+            shot.life <= 0 ||
+            shot.distance >= shot.maxDistance ||
+            bulletHitsFarmObstacle(shot)
+          ) {
+            createImpactEffect(shot.x, shot.y, shot.color, .7);
+            playerShots.splice(i, 1);
+          }
         }
         for (let i = zombieShots.length - 1; i >= 0; i--) {
           const shot = zombieShots[i];
           shot.x += shot.vx * delta;
           shot.y += shot.vy * delta;
           shot.life -= delta;
-         if (
-  shot.life <= 0 ||
-  shot.x < 0 ||
-  shot.x > width ||
-  shot.y < 0 ||
-  shot.y > height ||
-  bulletHitsFarmObstacle(shot)
-) {
-  zombieShots.splice(i, 1);
-} else if (Math.hypot(shot.x - player.x, shot.y - player.y) < shot.radius + 11) {
+          if (
+            shot.life <= 0 ||
+            Math.abs(shot.x - player.x) > width * 1.5 ||
+            Math.abs(shot.y - player.y) > height * 1.5 ||
+            bulletHitsFarmObstacle(shot)
+          ) {
+            if (shot.eggBomb) detonateBossEgg(shot);
+            else if (bulletHitsFarmObstacle(shot)) createImpactEffect(shot.x, shot.y, "#f2c965", .65);
             zombieShots.splice(i, 1);
-            damagePlayer(shot.bossShot ? health : 3, shot.attacker);
+          } else if (Math.hypot(shot.x - player.x, shot.y - player.y) < shot.radius + 11) {
+            zombieShots.splice(i, 1);
+            if (shot.eggBomb) detonateBossEgg(shot);
+            else {
+              createImpactEffect(player.x, player.y, "#ff875f", .9);
+              damagePlayer(shot.bossShot ? health : 3, shot.attacker);
+            }
             if (phase !== "playing") return;
           }
         }
@@ -2287,17 +3334,26 @@ function bulletHitsFarmObstacle(shot) {
         updateDodgeStatus();
         timeNode.textContent = String(roundDuration);
         roundNode.textContent = round;
-        player.x = width * .49;
-        player.y = height * .54;
+        if (round === 1) {
+          player.x = width * .49;
+          player.y = height * .54;
+          initializeWorld();
+        }
+        ensureWorldChunks();
         health = maxHealth;
         updateHealthReadout();
         player.invulnerable = 0;
         chickens.length = 0;
-        goldenDrops.length = 0;
+        for (let i = goldenDrops.length - 1; i >= 0; i--) {
+          if (goldenDrops[i].kind !== "boss-weapon" && goldenDrops[i].kind !== "boss-perk") {
+            goldenDrops.splice(i, 1);
+          }
+        }
         pendingZombieRespawns.length = 0;
         zombieShots.length = 0;
-        farmObstacles = round > 10 ? createFarmObstacleLayout() : [];
-        for (let i = 0; i < 3 + bonusChickenCount; i++) {
+        playerShots.length = 0;
+        visualEffects.length = 0;
+        for (let i = 0; i < 4 + bonusChickenCount; i++) {
           const chicken = { hostile: false };
           respawnCollectibleChicken(chicken);
           chickens.push(chicken);
@@ -2319,10 +3375,27 @@ function bulletHitsFarmObstacle(shot) {
           chickens.push(chicken);
         }
         if (round % 10 === 0) {
-          const bossHealth = 30 * Math.pow(1.05, round - 10) * 1.5;
-          const boss = { hostile: true, boss: true, health: bossHealth, maxHealth: bossHealth, shootCooldown: .8 + Math.random() * 1.2 };
+          const bossNumber = Math.floor(round / 10);
+          const archetype = getBossArchetype(bossNumber);
+          const bossHealth = (36 + bossNumber * 8) * Math.pow(1.08, Math.max(0, round - 10)) * 1.5;
+          const boss = {
+            hostile: true,
+            boss: true,
+            bossId: archetype.id,
+            bossName: archetype.name,
+            bossAbility: archetype.ability,
+            bossColor: archetype.color,
+            health: bossHealth,
+            maxHealth: bossHealth,
+            shootCooldown: .8 + Math.random() * 1.2,
+            abilityCooldown: 2.5,
+            chargeTimer: 0,
+            summonCount: 0,
+            summonCooldown: 8
+          };
           placeChicken(boss, true);
           chickens.push(boss);
+          showRewardToast(archetype.name.toUpperCase(), `Special ability: ${archetype.ability.replace("-", " ")}.`);
         }
         countdownRemaining = 5;
         phase = "countdown";
@@ -2332,6 +3405,7 @@ function bulletHitsFarmObstacle(shot) {
       }
 
     function completeRound() {
+      awardXp(10);
       nextRoundNode.textContent = round + 1;
       secondsLeft = 0;
       timeNode.textContent = "0";
@@ -2437,9 +3511,18 @@ function bulletHitsFarmObstacle(shot) {
   selectedArmor = null;
   moveSpeed = 205;
   pickupRadius = 25;
+  swordRange = 58;
   hitProtection = 1.2;
   chickenFleeFactor = 1;
   zombieSpeedFactor = 1;
+  homingBulletsEnabled = false;
+  extraProjectiles = 0;
+  lifeStealEnabled = false;
+  explosiveEnemiesEnabled = false;
+  freezeChance = 0;
+  secondWindEnabled = false;
+  secondWindCooldown = 0;
+  applyUnlockedSkills();
   activeOffers = [];
   lockedOfferIds.clear();
   purchasedOfferIds.clear();
@@ -2452,6 +3535,9 @@ function bulletHitsFarmObstacle(shot) {
   reloadTimer = 0;
   weaponRoundsPlayed = 0;
   attackEffects.length = 0;
+  playerShots.length = 0;
+  visualEffects.length = 0;
+  goldenDrops.length = 0;
 
   weaponControls.hidden = true;
   weaponHelp.hidden = true;
@@ -2524,6 +3610,8 @@ function bulletHitsFarmObstacle(shot) {
         pendingZombieRespawns.length = 0;
         zombieShots.length = 0;
         attackEffects.length = 0;
+        playerShots.length = 0;
+        visualEffects.length = 0;
         phase = "upgrade";
         upgradePanel.hidden = false;
         showUpgradeOffers();
@@ -2557,6 +3645,7 @@ function bulletHitsFarmObstacle(shot) {
         window.clearTimeout(autoAdvanceTimer);
         autoAdvanceTimer = null;
         phase = "menu";
+        skillTreeDialog.hidden = true;
         keys.clear();
         resetJoystick();
         homeMenu.hidden = false;
@@ -2655,6 +3744,13 @@ menuStartButton.addEventListener("click", () => {
 
   startIntro();
 });
+openSkillTreeButton.addEventListener("click", openSkillTree);
+fieldSkillTreeButton.addEventListener("click", openSkillTree);
+closeSkillTreeButton.addEventListener("click", closeSkillTree);
+skillTreeGrid.addEventListener("click", event => {
+  const button = event.target.closest("[data-skill]");
+  if (button) unlockSkill(button.dataset.skill);
+});
 
       skipIntroButton.addEventListener("click", finishIntro);
       startRescueButton.addEventListener("click", finishIntro);
@@ -2662,7 +3758,7 @@ menuStartButton.addEventListener("click", () => {
       rerollUpgradesButton.addEventListener("click", () => rerollUpgradeOffers());
       pauseButton.addEventListener("click", togglePause);
       skipWaveButton.addEventListener("click", () => {
-        if (cheatMode && ["playing", "countdown", "paused"].includes(phase)) completeRound();
+        if (round % 10 !== 0 && ["playing", "countdown", "paused"].includes(phase)) completeRound();
       });
       restartButton.addEventListener("click", restartOrRespawn);
       soundEnabledInput.addEventListener("change", () => {
@@ -2737,6 +3833,13 @@ menuStartButton.addEventListener("click", () => {
         });
       }
       window.addEventListener("keydown", event => {
+        if (!skillTreeDialog.hidden) {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            closeSkillTree();
+          }
+          return;
+        }
         if (!introScreen.hidden) {
           if (event.key === "Escape") {
             event.preventDefault();
@@ -2775,6 +3878,8 @@ menuStartButton.addEventListener("click", () => {
         resetJoystick();
       });
 
+      loadProgression();
+      renderSkillTree();
       requestAnimationFrame(frame);
     })();
   </script>
