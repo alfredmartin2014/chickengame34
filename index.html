@@ -1652,12 +1652,12 @@ button:focus-visible, select:focus-visible, input:focus-visible {
         }
         /* Stage 1: wildflower meadow details */
         chunk.flowers = [];
-        const flowerPatchCount = 7 + Math.floor(random() * 5);
+        const flowerPatchCount = 4 + Math.floor(random() * 4);
         const flowerColors = ["#f6e7a2", "#f1c6a8", "#e9edf0", "#d9b9df"];
         for (let i = 0; i < flowerPatchCount; i++) {
           const flowerX = originX + 28 + random() * (worldChunkSize - 56);
           const flowerY = originY + 28 + random() * (worldChunkSize - 56);
-          const flowerCount = 2 + Math.floor(random() * 3);
+          const flowerCount = 2 + Math.floor(random() * 2);
           const flowers = [];
           for (let j = 0; j < flowerCount; j++) {
             flowers.push({
