@@ -732,6 +732,100 @@
       .upgrade-card { min-height: 54px; padding: 7px 10px; }
       .upgrade-icon { width: 28px; text-align: center; }
     }
+  
+/* Chicken Chase visual polish — additive overrides */
+:root {
+  --ink: #172b22;
+  --muted: #65796b;
+  --paper: #f4f2e7;
+  --green: #1f593b;
+  --lime: #dff28a;
+  --coral: #f0805b;
+}
+body {
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(223,242,138,.34), transparent 34rem),
+    radial-gradient(ellipse at 100% 35%, rgba(31,89,59,.09), transparent 30rem),
+    linear-gradient(135deg,#f8f7ef 0%,var(--paper) 55%,#e9eddf 100%);
+  letter-spacing: .01em;
+}
+main { width:min(1120px,calc(100% - 32px)); padding-top:clamp(18px,3vw,34px); }
+.topline { margin-bottom:clamp(14px,2.5vw,24px); }
+.brand-mark {
+  box-shadow: 0 4px 0 rgba(23,43,34,.14), inset 0 1px 0 rgba(255,255,255,.7);
+  transition:transform .2s ease,box-shadow .2s ease;
+}
+.brand-mark:hover { transform:rotate(0) translateY(-2px); box-shadow:0 6px 0 rgba(23,43,34,.13); }
+h1 { letter-spacing:-.035em; }
+.game-shell {
+  border-width:2px;
+  border-radius:16px;
+  box-shadow:0 12px 30px rgba(23,43,34,.14),0 3px 0 rgba(23,43,34,.08);
+  background:#8dbd63;
+}
+canvas { image-rendering:auto; }
+button, .start-button, .skill-tree-open, .skill-tree-close {
+  transition:transform .14s ease, box-shadow .14s ease, filter .14s ease;
+}
+button:not(:disabled):hover, .start-button:hover, .skill-tree-open:hover, .skill-tree-close:hover {
+  filter:brightness(1.04);
+  transform:translateY(-1px);
+}
+button:not(:disabled):active, .start-button:active, .skill-tree-open:active, .skill-tree-close:active {
+  transform:translateY(1px);
+}
+button:focus-visible, select:focus-visible, input:focus-visible {
+  outline:3px solid var(--coral);
+  outline-offset:3px;
+}
+.home-menu, .intro-screen, .skill-tree-dialog {
+  backdrop-filter:blur(8px);
+}
+.home-menu-panel, .skill-tree-panel, .upgrade-panel, .weapon-panel, .armor-panel {
+  border-radius:14px;
+  box-shadow:0 18px 50px rgba(0,0,0,.28),0 3px 0 rgba(32,59,45,.14);
+}
+.home-menu-panel {
+  border-color:rgba(23,43,34,.75);
+  background:linear-gradient(160deg,rgba(255,255,250,.98),rgba(241,241,222,.98));
+}
+.home-menu-panel h2, .skill-tree-heading h2 { letter-spacing:-.035em; }
+.home-menu-hook, .intro-art, .intro-game-preview {
+  border-radius:12px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 5px 16px rgba(0,0,0,.12);
+}
+.round-tag {
+  border-radius:10px;
+  box-shadow:0 3px 0 rgba(23,43,34,.16);
+}
+.reward-toast {
+  border-radius:12px;
+  box-shadow:0 10px 28px rgba(0,0,0,.24);
+  backdrop-filter:blur(8px);
+}
+.skill-node {
+  border-radius:10px;
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+}
+.skill-node:not(.is-locked):hover {
+  transform:translateY(-2px);
+  box-shadow:0 5px 12px rgba(32,59,45,.1);
+}
+.skill-tree-progress-track { height:9px; }
+.skill-tree-progress-bar { box-shadow:0 0 8px rgba(138,169,75,.28); }
+@media (max-width:600px) {
+  main { width:calc(100% - 20px); padding-top:14px; }
+  .game-shell { border-radius:10px; }
+  .topline { align-items:flex-start; }
+  .brand { gap:8px; }
+  .brand-mark { width:36px;height:36px;font-size:20px; }
+  .round-tag { min-width:88px;padding:5px 8px; }
+  .skill-tree-paths { grid-template-columns:minmax(0,1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
+}
+
   </style>
 </head>
 <body>
