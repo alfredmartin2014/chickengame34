@@ -2404,6 +2404,17 @@ button:focus-visible, select:focus-visible, input:focus-visible {
       }
 
       function createImpactEffect(x, y, color, scale = 1) {
+        visualEffects.push({
+          kind: "burst",
+          x,
+          y,
+          radius: 2,
+          maxRadius: 15 * scale,
+          life: .18,
+          maxLife: .18,
+          rotation: Math.random() * Math.PI,
+          color
+        });
         visualEffects.push({ kind: "ring", x, y, radius: 5, maxRadius: 24 * scale, life: .24, maxLife: .24, color });
         for (let i = 0; i < 7; i++) {
           const angle = Math.random() * Math.PI * 2;
@@ -2498,6 +2509,8 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 
       function damageZombie(chicken, amount) {
         chicken.health -= amount;
+        /* Stage 3: combat impact polish — readable hit feedback without gameplay changes. */
+        createImpactEffect(chicken.x, chicken.y, chicken.boss ? "#ffd17a" : chicken.spiky ? "#b9e8a1" : "#fff0a6", chicken.boss ? 1.35 : .82);
         addFloatingText(chicken.x, chicken.y - 22, `-${Math.max(1, Math.round(amount))}`, chicken.boss ? "#ffd17a" : "#fffdf5", chicken.boss ? 1.15 : 1);
         if (chicken.health > 0) return;
         const index = chickens.indexOf(chicken);
@@ -3475,7 +3488,24 @@ button:focus-visible, select:focus-visible, input:focus-visible {
           const alpha = Math.max(0, effect.life / effect.maxLife);
           ctx.save();
           ctx.globalAlpha = alpha;
-          if (effect.kind === "ring") {
+          if (effect.kind === "burst") {
+            ctx.translate(effect.x, effect.y);
+            ctx.rotate(effect.rotation || 0);
+            ctx.strokeStyle = effect.color;
+            ctx.lineWidth = 2.2 * alpha;
+            ctx.lineCap = "round";
+            ctx.shadowColor = effect.color;
+            ctx.shadowBlur = 12;
+            for (let ray = 0; ray < 8; ray++) {
+              const angle = ray * Math.PI / 4;
+              const inner = effect.radius * .45;
+              const outer = effect.radius * (ray % 2 ? .88 : 1.25);
+              ctx.beginPath();
+              ctx.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+              ctx.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+              ctx.stroke();
+            }
+          } else if (effect.kind === "ring") {
             ctx.strokeStyle = effect.color;
             ctx.shadowColor = effect.color;
             ctx.shadowBlur = 10;
@@ -3556,8 +3586,9 @@ function bulletHitsFarmObstacle(shot) {
             effect.y += effect.vy * delta;
             effect.vx *= .94;
             effect.vy *= .94;
-          } else if (effect.kind === "ring") {
+          } else if (effect.kind === "ring" || effect.kind === "burst") {
             effect.radius = effect.maxRadius * (1 - effect.life / effect.maxLife);
+            if (effect.kind === "burst") effect.rotation += delta * 1.8;
           } else if (effect.kind === "floating-text") {
             effect.y -= effect.riseSpeed * delta;
           }
