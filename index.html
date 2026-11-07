@@ -826,6 +826,63 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
 }
 
+  
+/* HUD and in-game feedback refinement */
+.hud-panel {
+  border: 1px solid rgba(224, 242, 186, .32);
+  border-radius: 11px;
+  background: linear-gradient(145deg, rgba(22, 48, 34, .94), rgba(29, 61, 42, .88));
+  box-shadow: 0 8px 20px rgba(10, 26, 17, .22), inset 0 1px 0 rgba(255,255,255,.1);
+  backdrop-filter: blur(7px);
+}
+.health-panel, .hud-currency-item, .hud-special {
+  border-color: rgba(223, 242, 138, .25);
+}
+.health-meter, .hud-xp-track {
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 999px;
+  background: rgba(5, 19, 11, .48);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.25);
+}
+.health-meter-fill, .hud-xp-fill {
+  border-radius: inherit;
+  box-shadow: 0 0 9px rgba(223,242,138,.28);
+}
+.hud-currency-item {
+  border-radius: 9px;
+  background: linear-gradient(150deg, rgba(39,72,49,.95), rgba(24,49,34,.95));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 3px 9px rgba(0,0,0,.15);
+}
+.field-control-button, .weapon-switch-button, .combat-button, .sound-menu > summary {
+  border-radius: 9px;
+  box-shadow: 0 3px 0 rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.16);
+}
+.active-effects-panel {
+  border: 1px solid rgba(223,242,138,.3);
+  border-radius: 11px;
+  background: rgba(20,43,30,.92);
+  box-shadow: 0 10px 24px rgba(0,0,0,.2);
+  backdrop-filter: blur(8px);
+}
+.upgrade-card {
+  border-radius: 11px;
+  box-shadow: 0 4px 0 rgba(20,43,30,.12), inset 0 1px 0 rgba(255,255,255,.45);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.upgrade-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(20,43,30,.14), inset 0 1px 0 rgba(255,255,255,.5);
+}
+.reward-toast {
+  border: 1px solid rgba(223,242,138,.35);
+  background: linear-gradient(145deg, rgba(26,58,39,.97), rgba(16,38,27,.97));
+}
+@media (max-width:600px) {
+  .hud-panel { border-radius: 8px; }
+  .upgrade-card:hover { transform:none; }
+}
+
   </style>
 </head>
 <body>
