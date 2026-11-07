@@ -1650,6 +1650,25 @@ button:focus-visible, select:focus-visible, input:focus-visible {
             flower: random() < .18
           });
         }
+        /* Stage 1: wildflower meadow details */
+        chunk.flowers = [];
+        const flowerPatchCount = 7 + Math.floor(random() * 5);
+        const flowerColors = ["#f6e7a2", "#f1c6a8", "#e9edf0", "#d9b9df"];
+        for (let i = 0; i < flowerPatchCount; i++) {
+          const flowerX = originX + 28 + random() * (worldChunkSize - 56);
+          const flowerY = originY + 28 + random() * (worldChunkSize - 56);
+          const flowerCount = 2 + Math.floor(random() * 3);
+          const flowers = [];
+          for (let j = 0; j < flowerCount; j++) {
+            flowers.push({
+              x: flowerX + (random() - .5) * 15,
+              y: flowerY + (random() - .5) * 12,
+              size: 1.5 + random() * 1.1,
+              color: flowerColors[Math.floor(random() * flowerColors.length)]
+            });
+          }
+          chunk.flowers.push(flowers);
+        }
         if (terrain === "orchard" || terrain === "grove") {
           const treeCount = 4 + Math.floor(random() * 4);
           for (let i = 0; i < treeCount; i++) {
@@ -2817,6 +2836,32 @@ button:focus-visible, select:focus-visible, input:focus-visible {
               ctx.fill();
             }
             ctx.restore();
+          }
+          /* Small flower clusters add detail without changing collision or movement. */
+          for (const patch of chunk.flowers || []) {
+            for (const flower of patch) {
+              ctx.fillStyle = "rgba(35,66,38,.18)";
+              ctx.beginPath();
+              ctx.ellipse(flower.x + .8, flower.y + 2, flower.size * 1.8, flower.size * .8, 0, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = flower.color;
+              for (let petal = 0; petal < 4; petal++) {
+                const angle = petal * Math.PI / 2;
+                ctx.beginPath();
+                ctx.arc(
+                  flower.x + Math.cos(angle) * flower.size * .9,
+                  flower.y + Math.sin(angle) * flower.size * .9,
+                  flower.size * .62,
+                  0,
+                  Math.PI * 2
+                );
+                ctx.fill();
+              }
+              ctx.fillStyle = "#d5a94e";
+              ctx.beginPath();
+              ctx.arc(flower.x, flower.y, flower.size * .42, 0, Math.PI * 2);
+              ctx.fill();
+            }
           }
           for (const tree of chunk.trees) {
             ctx.fillStyle = "rgba(37,61,36,.2)";
