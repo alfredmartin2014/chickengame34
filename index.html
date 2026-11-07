@@ -700,6 +700,8 @@
       .field-control-button, .sound-menu > summary { width: 32px; height: 32px; font-size: 16px; }
       .skip-wave-button { min-width: 84px; height: 32px; padding: 0 5px; font-size: 9px; }
       .active-effects-panel { top: 114px; right: 8px; width: min(180px, calc(100% - 16px)); max-height: min(150px, calc(100% - 125px)); }
+      .active-effects-panel[open] { top: auto; bottom: 58px; max-height: min(120px, calc(100% - 140px)); }
+      .field-wrap:has(.active-effects-panel[open]) .hud-xp { left: 8px; width: min(142px, 40%); transform: none; }
       .sword-status { display: none; }
       .weapon-controls { bottom: 8px; left: 8px; width: auto; max-width: calc(100% - 16px); justify-content: flex-start; gap: 3px; padding: 4px; }
       .weapon-controls .weapon-readout { min-width: 42px; }
@@ -719,7 +721,7 @@
       .skill-tree-paths { grid-template-columns: 1fr; gap: 12px; }
       .skill-path-nodes { gap: 5px; }
       .skin-control select { min-height: 34px; }
-      .weapon-controls { width: 100%; justify-content: flex-end; }
+      .weapon-controls { width: auto; justify-content: flex-start; }
       .combat-button { min-height: 36px; padding: 7px 8px; }
       .touch-joystick { display: block; width: 104px; height: 104px; left: 10px; bottom: 10px; }
       .joystick-knob { width: 44px; height: 44px; }
@@ -903,20 +905,7 @@
           <div><p class="upgrade-kicker">WEAPON SLOT OPEN</p><h2 id="weapon-title">Choose a weapon</h2></div>
           <p>Add it to your loadout</p>
         </div>
-        <div class="upgrade-grid">
-          <button class="upgrade-card weapon-card" type="button" data-weapon="knife">
-            <span class="upgrade-icon" aria-hidden="true">🔪</span>
-            <span class="upgrade-copy"><strong>Knife</strong><span class="weapon-perk">Perk: quick strikes, +25 speed</span><span class="weapon-debuff">Debuff: 90 px reach</span><small>Unlimited melee</small></span>
-          </button>
-          <button class="upgrade-card weapon-card" type="button" data-weapon="sniper">
-            <span class="upgrade-icon" aria-hidden="true">🎯</span>
-            <span class="upgrade-copy"><strong>Sniper</strong><span class="weapon-perk">Perk: 420 px range, 2 damage</span><span class="weapon-debuff">Debuff: slow shots, -45 speed</span><small>5 rounds + 20 reserve</small></span>
-          </button>
-          <button class="upgrade-card weapon-card" type="button" data-weapon="ak47">
-            <span class="upgrade-icon" aria-hidden="true">🔫</span>
-            <span class="upgrade-copy"><strong>AK-47</strong><span class="weapon-perk">Perk: rapid automatic fire</span><span class="weapon-debuff">Debuff: -20 speed, reload often</span><small>30 rounds + 90 reserve</small></span>
-          </button>
-        </div>
+        <div class="upgrade-grid" id="weapon-choice-grid"></div>
         <p class="upgrade-note">Hold Space or Fire to shoot. Reload with R or the Reload button.</p>
       </section>
       <section class="upgrade-panel" id="armor-panel" aria-labelledby="armor-title" hidden>
@@ -1045,6 +1034,7 @@
       const rerollUpgradesButton = document.querySelector("#reroll-upgrades");
       const continueRoundButton = document.querySelector("#continue-round");
       const weaponPanel = document.querySelector("#weapon-panel");
+      const weaponChoiceGridNode = document.querySelector("#weapon-choice-grid");
       const armorPanel = document.querySelector("#armor-panel");
       const weaponControls = document.querySelector("#weapon-controls");
       const weaponHelp = document.querySelector("#weapon-help");
@@ -1189,14 +1179,14 @@
       ];
 
       const weaponCatalog = {
-        knife: { id: "knife", name: "Knife", range: 90, damage: 1, cooldown: .24, speedModifier: 25, magazine: Infinity, ammo: Infinity, reserve: Infinity, reloadTime: 0, perk: "Quick strikes, +25 movement speed", debuff: "90 px reach" },
-        sniper: { id: "sniper", name: "Sniper", range: 420, damage: 2, cooldown: 1.05, speedModifier: -45, magazine: 5, ammo: 5, reserve: 20, reloadTime: 1.5, perk: "420 px range, 2 damage", debuff: "Slow shots, -45 movement speed" },
-        ak47: { id: "ak47", name: "AK-47", range: 220, damage: 1, cooldown: .16, speedModifier: -20, magazine: 30, ammo: 30, reserve: 90, reloadTime: 1.25, perk: "Rapid automatic fire", debuff: "-20 movement speed, frequent reloads" },
-        shotgun: { id: "shotgun", name: "Rooster Shotgun", range: 250, damage: 4, cooldown: .72, speedModifier: -8, magazine: 8, ammo: 8, reserve: 40, reloadTime: 1.35, projectile: true, projectileColor: "#ffb353", perk: "Heavy close-range blasts", debuff: "Short range, slow reload" },
-        rocket: { id: "rocket", name: "Egg Launcher", range: 370, damage: 7, cooldown: 1.05, speedModifier: -14, magazine: 5, ammo: 5, reserve: 25, reloadTime: 1.7, projectile: true, explosive: true, projectileColor: "#ff784f", perk: "Explosive splash damage", debuff: "Slow fire rate" },
-        plasma: { id: "plasma", name: "Plasma Rooster", range: 460, damage: 10, cooldown: .48, speedModifier: 0, magazine: 18, ammo: 18, reserve: 72, reloadTime: 1.3, projectile: true, projectileColor: "#8df2ff", perk: "Fast, powerful plasma bolts", debuff: "Energy magazine" },
-        railgun: { id: "railgun", name: "Colonel Railgun", range: 520, damage: 15, cooldown: .92, speedModifier: -5, magazine: 6, ammo: 6, reserve: 30, reloadTime: 1.5, projectile: true, pierce: true, projectileColor: "#b8a0ff", perk: "Piercing high-damage shots", debuff: "Slow fire rate" },
-        "final-cannon": { id: "final-cannon", name: "Final Colonel Cannon", range: 560, damage: 22, cooldown: .78, speedModifier: 5, magazine: 8, ammo: 8, reserve: 40, reloadTime: 1.35, projectile: true, explosive: true, projectileColor: "#ff596b", perk: "Devastating explosive shots", debuff: "The Colonel's legendary weapon" }
+        knife: { id: "knife", name: "Knife", choiceIcon: "🔪", choiceWeight: 1.8, choiceFromWave: 5, range: 90, damage: 1, cooldown: .24, speedModifier: 25, magazine: Infinity, ammo: Infinity, reserve: Infinity, reloadTime: 0, perk: "Quick strikes, +25 movement speed", debuff: "90 px reach" },
+        sniper: { id: "sniper", name: "Sniper", choiceIcon: "🎯", choiceWeight: 1.7, choiceFromWave: 5, range: 420, damage: 2, cooldown: 1.05, speedModifier: -45, magazine: 5, ammo: 5, reserve: 20, reloadTime: 1.5, perk: "420 px range, 2 damage", debuff: "Slow shots, -45 movement speed" },
+        ak47: { id: "ak47", name: "AK-47", choiceIcon: "🔫", choiceWeight: 2, choiceFromWave: 5, range: 220, damage: 1, cooldown: .16, speedModifier: -20, magazine: 30, ammo: 30, reserve: 90, reloadTime: 1.25, perk: "Rapid automatic fire", debuff: "-20 movement speed, frequent reloads" },
+        shotgun: { id: "shotgun", name: "Rooster Shotgun", choiceIcon: "💥", choiceWeight: 1.5, choiceFromWave: 5, range: 250, damage: 4, cooldown: .72, speedModifier: -8, magazine: 8, ammo: 8, reserve: 40, reloadTime: 1.35, projectile: true, projectileColor: "#ffb353", perk: "Heavy close-range blasts", debuff: "Short range, slow reload" },
+        rocket: { id: "rocket", name: "Egg Launcher", choiceIcon: "🚀", choiceWeight: 1.1, choiceFromWave: 5, range: 370, damage: 7, cooldown: 1.05, speedModifier: -14, magazine: 5, ammo: 5, reserve: 25, reloadTime: 1.7, projectile: true, explosive: true, projectileColor: "#ff784f", perk: "Explosive splash damage", debuff: "Slow fire rate" },
+        plasma: { id: "plasma", name: "Plasma Rooster", choiceIcon: "⚡", choiceWeight: .9, choiceFromWave: 10, range: 460, damage: 10, cooldown: .48, speedModifier: 0, magazine: 18, ammo: 18, reserve: 72, reloadTime: 1.3, projectile: true, projectileColor: "#8df2ff", perk: "Fast, powerful plasma bolts", debuff: "Energy magazine" },
+        railgun: { id: "railgun", name: "Colonel Railgun", choiceIcon: "🎯", choiceWeight: .65, choiceFromWave: 15, range: 520, damage: 15, cooldown: .92, speedModifier: -5, magazine: 6, ammo: 6, reserve: 30, reloadTime: 1.5, projectile: true, pierce: true, projectileColor: "#b8a0ff", perk: "Piercing high-damage shots", debuff: "Slow fire rate" },
+        "final-cannon": { id: "final-cannon", name: "Final Colonel Cannon", choiceIcon: "🌟", choiceWeight: .4, choiceFromWave: 25, range: 560, damage: 22, cooldown: .78, speedModifier: 5, magazine: 8, ammo: 8, reserve: 40, reloadTime: 1.35, projectile: true, explosive: true, projectileColor: "#ff596b", perk: "Devastating explosive shots", debuff: "The Colonel's legendary weapon" }
       };
       const bossCatalog = [
         { id: "mega-rooster", name: "The Mega Rooster", ability: "charge", color: "#d56b35" },
@@ -2016,6 +2006,27 @@
         });
       }
 
+      function fireMutantBurst(boss) {
+        const projectileCount = 10;
+        warnBossAttack(boss.x, boss.y, 100, "#9be253");
+        for (let index = 0; index < projectileCount; index++) {
+          const angle = Math.PI * 2 * index / projectileCount;
+          zombieShots.push({
+            x: boss.x + Math.cos(angle) * 25,
+            y: boss.y + Math.sin(angle) * 25,
+            vx: Math.cos(angle) * 170,
+            vy: Math.sin(angle) * 170,
+            radius: 7,
+            life: 4,
+            bossShot: true,
+            mutantShot: true,
+            damage: 1,
+            attacker: boss
+          });
+        }
+        showRewardToast("MUTANT TURKEY FEATHER BURST", "A ring of infected feathers is flying!");
+      }
+
       function detonateBossEgg(shot) {
         createExplosionEffect(shot.x, shot.y);
         if (Math.hypot(shot.x - player.x, shot.y - player.y) <= shot.blastRadius) {
@@ -2252,6 +2263,25 @@
         }
       }
 
+      function createWeaponImpact(weaponId, x, y, scale = 1) {
+        const colors = {
+          knife: "#f2df91",
+          sniper: "#a9efff",
+          ak47: "#ffdc62",
+          shotgun: "#ffb353",
+          rocket: "#ff784f",
+          plasma: "#8df2ff",
+          railgun: "#b8a0ff",
+          "final-cannon": "#ff596b"
+        };
+        const color = colors[weaponId] || "#fff2a1";
+        const impactScale = weaponId === "final-cannon" || weaponId === "rocket" ? scale * 1.25 : scale;
+        createImpactEffect(x, y, color, impactScale);
+        if (weaponId === "plasma" || weaponId === "railgun") {
+          visualEffects.push({ kind: "ring", x, y, radius: 3, maxRadius: weaponId === "railgun" ? 42 : 30, life: .22, maxLife: .22, color });
+        }
+      }
+
       function createExplosionEffect(x, y) {
         visualEffects.push({ kind: "ring", x, y, radius: 8, maxRadius: 76, life: .38, maxLife: .38, color: "#ff9d42" });
         visualEffects.push({ kind: "ring", x, y, radius: 5, maxRadius: 46, life: .28, maxLife: .28, color: "#ffe27a" });
@@ -2270,6 +2300,10 @@
             color: Math.random() > .5 ? "#ff9d42" : "#ffe27a"
           });
         }
+      }
+
+      function warnBossAttack(x, y, radius, color) {
+        visualEffects.push({ kind: "ring", x, y, radius: 0, maxRadius: radius, life: .62, maxLife: .62, color });
       }
 
       function resolveWeaponHit(target, damage) {
@@ -2302,6 +2336,7 @@
       function firePlayerProjectile(target, angle) {
         const speed = weapon.id === "sniper" ? 760 : 620;
         playerShots.push({
+          weaponId: weapon.id,
           x: player.x + Math.cos(angle) * 20,
           y: player.y + Math.sin(angle) * 20,
           vx: Math.cos(angle) * speed,
@@ -2410,7 +2445,7 @@
           const targetAngle = target
             ? Math.atan2(target.y - player.y, target.x - player.x)
             : player.facing > 0 ? 0 : Math.PI;
-          visualEffects.push({ kind: "muzzle", x: player.x + Math.cos(targetAngle) * 17, y: player.y + Math.sin(targetAngle) * 17, life: .09, maxLife: .09, color: weapon.id === "sniper" ? "#a9efff" : "#ffe27a" });
+          visualEffects.push({ kind: "muzzle", weaponId: weapon.id, angle: targetAngle, x: player.x + Math.cos(targetAngle) * 17, y: player.y + Math.sin(targetAngle) * 17, life: .12, maxLife: .12, color: weapon.projectileColor || (weapon.id === "sniper" ? "#a9efff" : "#ffe27a") });
           if (weapon.projectile || homingBulletsEnabled || extraProjectiles > 0) {
             const projectileCount = 1 + extraProjectiles;
             for (let i = 0; i < projectileCount; i++) {
@@ -2427,15 +2462,19 @@
             const targetX = target.x;
             const targetY = target.y;
             resolveWeaponHit(target, weapon.damage);
-            createImpactEffect(targetX, targetY, weapon.id === "sniper" ? "#a9efff" : "#ffe27a");
-            attackEffects.push({ x1: player.x, y1: player.y, x2: targetX, y2: targetY, color: weapon.id === "sniper" ? "#a9efff" : "#ffe27a", time: .16, width: weapon.id === "sniper" ? 4 : 2 });
+            createWeaponImpact(weapon.id, targetX, targetY);
+            attackEffects.push({ x1: player.x, y1: player.y, x2: targetX, y2: targetY, color: weapon.projectileColor || (weapon.id === "sniper" ? "#a9efff" : "#ffe27a"), time: .16, width: weapon.id === "sniper" ? 4 : 2 });
           }
         } else if (target) {
           const targetX = target.x;
           const targetY = target.y;
           resolveWeaponHit(target, weapon.damage);
-          createImpactEffect(targetX, targetY, "#fff2a1");
-          attackEffects.push({ x1: player.x, y1: player.y, x2: targetX, y2: targetY, color: "#fff2a1", time: .16, width: 4 });
+          createWeaponImpact(weapon.id, targetX, targetY);
+          if (weapon.id === "knife") {
+            attackEffects.push({ kind: "slash", x: player.x, y: player.y, angle: Math.atan2(targetY - player.y, targetX - player.x), radius: 34, color: "#fff2a1", time: .16, width: 5 });
+          } else {
+            attackEffects.push({ x1: player.x, y1: player.y, x2: targetX, y2: targetY, color: weapon.projectileColor || "#fff2a1", time: .16, width: 4 });
+          }
         }
         updateWeaponReadout();
       }
@@ -2452,6 +2491,47 @@
           armorPanel.hidden = false;
         } else {
           startNextRound();
+        }
+      }
+
+      function showWeaponChoices() {
+        const nextWave = round + 1;
+        const candidates = Object.values(weaponCatalog).filter(item => item.choiceFromWave <= nextWave);
+        const choices = [];
+        while (choices.length < 3 && candidates.length > 0) {
+          const totalWeight = candidates.reduce((total, item) => total + item.choiceWeight, 0);
+          let selection = Math.random() * totalWeight;
+          const selectedIndex = candidates.findIndex(item => (selection -= item.choiceWeight) <= 0);
+          choices.push(candidates.splice(selectedIndex < 0 ? candidates.length - 1 : selectedIndex, 1)[0]);
+        }
+
+        weaponChoiceGridNode.replaceChildren();
+        for (const weaponOption of choices) {
+          const button = document.createElement("button");
+          button.className = "upgrade-card weapon-card";
+          button.type = "button";
+          button.dataset.weapon = weaponOption.id;
+          const icon = document.createElement("span");
+          icon.className = "upgrade-icon";
+          icon.setAttribute("aria-hidden", "true");
+          icon.textContent = weaponOption.choiceIcon;
+          const copy = document.createElement("span");
+          copy.className = "upgrade-copy";
+          const name = document.createElement("strong");
+          name.textContent = weaponOption.name;
+          const perk = document.createElement("span");
+          perk.className = "weapon-perk";
+          perk.textContent = `Perk: ${weaponOption.perk}`;
+          const debuff = document.createElement("span");
+          debuff.className = "weapon-debuff";
+          debuff.textContent = `Debuff: ${weaponOption.debuff}`;
+          const ammo = document.createElement("small");
+          ammo.textContent = weaponOption.magazine === Infinity
+            ? "Unlimited melee"
+            : `${weaponOption.magazine} rounds + ${weaponOption.reserve} reserve`;
+          copy.append(name, perk, debuff, ammo);
+          button.append(icon, copy);
+          weaponChoiceGridNode.append(button);
         }
       }
 
@@ -3132,13 +3212,44 @@
           ctx.translate(shot.x, shot.y);
           ctx.rotate(Math.atan2(shot.vy, shot.vx));
           ctx.shadowColor = shot.color;
-          ctx.shadowBlur = 12;
-          ctx.strokeStyle = shot.color;
-          ctx.lineWidth = shot.radius * 1.4;
-          ctx.lineCap = "round";
-          ctx.beginPath(); ctx.moveTo(-17, 0); ctx.lineTo(3, 0); ctx.stroke();
-          ctx.fillStyle = "#fffdf1";
-          ctx.beginPath(); ctx.arc(2, 0, shot.radius * .7, 0, Math.PI * 2); ctx.fill();
+          ctx.shadowBlur = shot.weaponId === "plasma" || shot.weaponId === "final-cannon" ? 20 : 12;
+          if (shot.weaponId === "railgun") {
+            ctx.strokeStyle = shot.color;
+            ctx.lineWidth = shot.radius * 2.4;
+            ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(-30, 0); ctx.lineTo(6, 0); ctx.stroke();
+            ctx.strokeStyle = "#fffdf1";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(-27, 0); ctx.lineTo(5, 0); ctx.stroke();
+          } else if (shot.weaponId === "plasma") {
+            ctx.fillStyle = shot.color;
+            ctx.beginPath(); ctx.arc(1, 0, shot.radius * 1.5, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = "#e8ffff";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(1, 0, shot.radius * .8, 0, Math.PI * 2); ctx.stroke();
+          } else if (shot.weaponId === "rocket" || shot.weaponId === "final-cannon") {
+            ctx.fillStyle = shot.weaponId === "final-cannon" ? "#fff1f4" : "#ffd27a";
+            ctx.beginPath(); ctx.moveTo(11, 0); ctx.lineTo(-7, -shot.radius); ctx.lineTo(-4, 0); ctx.lineTo(-7, shot.radius); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = shot.color;
+            ctx.lineWidth = shot.weaponId === "final-cannon" ? 4 : 2.5;
+            ctx.beginPath(); ctx.moveTo(-7, 0); ctx.lineTo(-19, 0); ctx.stroke();
+          } else if (shot.weaponId === "shotgun") {
+            ctx.strokeStyle = shot.color;
+            ctx.lineWidth = shot.radius * 2.2;
+            ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(4, 0); ctx.stroke();
+            ctx.fillStyle = "#fff2c7";
+            for (const pellet of [[2, -3], [5, 0], [2, 3]]) {
+              ctx.beginPath(); ctx.arc(pellet[0], pellet[1], 1.5, 0, Math.PI * 2); ctx.fill();
+            }
+          } else {
+            ctx.strokeStyle = shot.color;
+            ctx.lineWidth = shot.weaponId === "sniper" ? 2 : shot.radius * 1.25;
+            ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(shot.weaponId === "sniper" ? -26 : -12, 0); ctx.lineTo(4, 0); ctx.stroke();
+            ctx.fillStyle = "#fffdf1";
+            ctx.beginPath(); ctx.arc(3, 0, shot.weaponId === "sniper" ? 2.5 : shot.radius * .55, 0, Math.PI * 2); ctx.fill();
+          }
           ctx.restore();
         }
         for (const drop of goldenDrops) {
@@ -3215,13 +3326,20 @@
           ctx.save();
           ctx.translate(shot.x, shot.y);
           ctx.rotate(Math.atan2(shot.vy, shot.vx));
-          ctx.shadowColor = shot.bossShot ? "#ff354d" : "#ffd66b";
+          const projectileColor = shot.mutantShot ? "#8de253" : shot.bossShot ? "#ff354d" : "#f2c965";
+          ctx.shadowColor = projectileColor;
           ctx.shadowBlur = 10;
-          ctx.strokeStyle = shot.bossShot ? "rgba(227,38,54,.55)" : "rgba(242,201,101,.62)";
+          ctx.strokeStyle = shot.mutantShot ? "rgba(141,226,83,.68)" : shot.bossShot ? "rgba(227,38,54,.55)" : "rgba(242,201,101,.62)";
           ctx.lineWidth = shot.eggBomb ? shot.radius * 2 : shot.radius * 1.6;
           ctx.lineCap = "round";
           ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(2, 0); ctx.stroke();
-          if (shot.eggBomb) {
+          if (shot.mutantShot) {
+            ctx.fillStyle = projectileColor;
+            ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-5, -6); ctx.lineTo(-2, 0); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = "#e8ffc5";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          } else if (shot.eggBomb) {
             ctx.fillStyle = "#f4e7b9";
             ctx.beginPath(); ctx.ellipse(2, 0, shot.radius * .8, shot.radius, 0, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = "#d9664e";
@@ -3229,7 +3347,7 @@
             ctx.fillStyle = "#fffdf1";
             ctx.beginPath(); ctx.arc(2, -3, 2, 0, Math.PI * 2); ctx.fill();
           } else {
-            ctx.fillStyle = shot.bossShot ? "#ff354d" : "#f2c965";
+            ctx.fillStyle = projectileColor;
             ctx.beginPath(); ctx.arc(2, 0, shot.radius, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = "#fff8d8";
             ctx.beginPath(); ctx.arc(3, -1, shot.radius * .4, 0, Math.PI * 2); ctx.fill();
@@ -3254,7 +3372,10 @@
           ctx.shadowBlur = 12;
           ctx.lineWidth = effect.width || 3;
           ctx.lineCap = "round";
-          ctx.beginPath(); ctx.moveTo(effect.x1, effect.y1); ctx.lineTo(effect.x2, effect.y2); ctx.stroke();
+          ctx.beginPath();
+          if (effect.kind === "slash") ctx.arc(effect.x, effect.y, effect.radius, effect.angle - .9, effect.angle + .9);
+          else { ctx.moveTo(effect.x1, effect.y1); ctx.lineTo(effect.x2, effect.y2); }
+          ctx.stroke();
           ctx.restore();
         }
         for (const effect of visualEffects) {
@@ -3273,10 +3394,42 @@
             ctx.shadowBlur = 8;
             ctx.beginPath(); ctx.arc(effect.x, effect.y, effect.size * alpha, 0, Math.PI * 2); ctx.fill();
           } else if (effect.kind === "muzzle") {
-            ctx.fillStyle = effect.color;
+            ctx.translate(effect.x, effect.y);
+            ctx.rotate(effect.angle || 0);
             ctx.shadowColor = effect.color;
-            ctx.shadowBlur = 18;
-            ctx.beginPath(); ctx.arc(effect.x, effect.y, 3 + 8 * alpha, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = effect.weaponId === "plasma" || effect.weaponId === "final-cannon" ? 22 : 14;
+            if (effect.weaponId === "sniper" || effect.weaponId === "railgun") {
+              ctx.strokeStyle = effect.color;
+              ctx.lineWidth = effect.weaponId === "railgun" ? 5 : 2.5;
+              ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(12, 0); ctx.stroke();
+              ctx.strokeStyle = "#fffdf1";
+              ctx.lineWidth = 1.5;
+              ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(10, 0); ctx.stroke();
+            } else if (effect.weaponId === "shotgun") {
+              ctx.fillStyle = effect.color;
+              ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-8, -12 * alpha); ctx.lineTo(-2, 0); ctx.lineTo(-8, 12 * alpha); ctx.closePath(); ctx.fill();
+            } else if (effect.weaponId === "rocket") {
+              ctx.fillStyle = effect.color;
+              ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-8, -5); ctx.lineTo(-4, 0); ctx.lineTo(-8, 5); ctx.closePath(); ctx.fill();
+              ctx.strokeStyle = "#ffd27a";
+              ctx.lineWidth = 3;
+              ctx.beginPath(); ctx.moveTo(-7, 0); ctx.lineTo(-17, 0); ctx.stroke();
+            } else if (effect.weaponId === "plasma" || effect.weaponId === "final-cannon") {
+              ctx.fillStyle = effect.weaponId === "final-cannon" ? "#fff1f4" : effect.color;
+              ctx.beginPath(); ctx.arc(1, 0, (effect.weaponId === "final-cannon" ? 10 : 7) * alpha, 0, Math.PI * 2); ctx.fill();
+              ctx.strokeStyle = effect.color;
+              ctx.lineWidth = 2;
+              ctx.beginPath(); ctx.arc(1, 0, 13 * alpha, 0, Math.PI * 2); ctx.stroke();
+            } else if (effect.weaponId === "ak47") {
+              ctx.fillStyle = effect.color;
+              ctx.beginPath(); ctx.arc(2, 0, 4 * alpha, 0, Math.PI * 2); ctx.fill();
+              ctx.strokeStyle = "#fff4bd";
+              ctx.lineWidth = 2;
+              ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(-9, 0); ctx.stroke();
+            } else {
+              ctx.fillStyle = effect.color;
+              ctx.beginPath(); ctx.arc(1, 0, 3 + 8 * alpha, 0, Math.PI * 2); ctx.fill();
+            }
           } else if (effect.kind === "floating-text") {
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -3423,27 +3576,40 @@ function bulletHitsFarmObstacle(shot) {
                 }
               }
               if (chicken.bossAbility === "charge") {
-                if (chicken.chargeTimer <= 0 && chicken.abilityCooldown <= 0) {
-                  chicken.chargeTimer = 1.15;
-                  chicken.abilityCooldown = 3.8;
+                if (chicken.chargeTimer <= 0 && chicken.chargeWindup <= 0 && chicken.abilityCooldown <= 0) {
+                  chicken.chargeWindup = .55;
+                  chicken.abilityCooldown = 4.2;
                   chicken.direction = Math.atan2(player.y - chicken.y, player.x - chicken.x);
+                  warnBossAttack(player.x, player.y, 52, "#d56b35");
+                  showRewardToast("MEGA ROOSTER CHARGES", "Dodge the rush!");
                 }
-                if (chicken.chargeTimer > 0) {
+                if (chicken.chargeWindup > 0) {
+                  chicken.chargeWindup = Math.max(0, chicken.chargeWindup - delta);
+                  chicken.direction = Math.atan2(player.y - chicken.y, player.x - chicken.x);
+                  if (chicken.chargeWindup === 0) {
+                    chicken.chargeTimer = 1.15;
+                    warnBossAttack(chicken.x, chicken.y, 42, "#ff9b53");
+                  }
+                } else if (chicken.chargeTimer > 0) {
                   chicken.chargeTimer = Math.max(0, chicken.chargeTimer - delta);
                   chicken.direction = Math.atan2(player.y - chicken.y, player.x - chicken.x);
                 }
               } else if (chicken.bossAbility === "summon" && chicken.abilityCooldown <= 0) {
+                warnBossAttack(chicken.x, chicken.y, 86, "#91e66a");
                 summonBossChickens(chicken);
                 chicken.abilityCooldown = 7;
               } else if (chicken.bossAbility === "explosive-eggs" && chicken.abilityCooldown <= 0) {
+                warnBossAttack(player.x, player.y, 66, "#f2c94c");
                 fireBossEgg(chicken, Math.atan2(player.y - chicken.y, player.x - chicken.x));
                 chicken.abilityCooldown = 2.5;
+              } else if (chicken.bossAbility === "split" && chicken.abilityCooldown <= 0) {
+                fireMutantBurst(chicken);
+                chicken.abilityCooldown = 5;
               } else if (chicken.bossAbility === "colonel" && chicken.abilityCooldown <= 0) {
                 const shotAngle = Math.atan2(player.y - chicken.y, player.x - chicken.x);
-                fireBossEgg(chicken, shotAngle, -.2);
-                fireBossEgg(chicken, shotAngle);
-                fireBossEgg(chicken, shotAngle, .2);
-                chicken.abilityCooldown = 2.8;
+                warnBossAttack(player.x, player.y, 54, "#ff596b");
+                for (let spread = -2; spread <= 2; spread++) fireBossEgg(chicken, shotAngle, spread * .16);
+                chicken.abilityCooldown = 3.2;
               }
             }
             if (chicken.gunner) {
@@ -3470,7 +3636,8 @@ function bulletHitsFarmObstacle(shot) {
             const waveSpeed = baseSpeed * Math.pow(1.05, round - 1);
             const playerSpeedCap = playerMoveSpeed * (slowZombie ? .9 : .95);
             let speed = Math.max(playerMoveSpeed * .5, Math.min(waveSpeed, playerSpeedCap) * zombieSpeedFactor);
-            if (chicken.bossAbility === "charge" && chicken.chargeTimer > 0) speed *= 2.6;
+            if (chicken.bossAbility === "charge" && chicken.chargeWindup > 0) speed = 0;
+            else if (chicken.bossAbility === "charge" && chicken.chargeTimer > 0) speed *= 2.6;
             if (chicken.bossAbility === "colonel") speed *= 1.15;
             if (chicken.mini) speed *= 1.2;
             chicken.x += Math.cos(chicken.direction) * speed * delta;
@@ -3600,7 +3767,7 @@ function bulletHitsFarmObstacle(shot) {
           );
           if (hitTarget) {
           resolveWeaponHit(hitTarget, shot.damage);
-          createImpactEffect(shot.x, shot.y, shot.color);
+          createWeaponImpact(shot.weaponId, shot.x, shot.y);
           shot.hitTargets.push(hitTarget);
           if (shot.explosive) {
             createExplosionEffect(shot.x, shot.y);
@@ -3617,7 +3784,7 @@ function bulletHitsFarmObstacle(shot) {
             shot.distance >= shot.maxDistance ||
             bulletHitsFarmObstacle(shot)
           ) {
-            createImpactEffect(shot.x, shot.y, shot.color, .7);
+            createWeaponImpact(shot.weaponId, shot.x, shot.y, .7);
             playerShots.splice(i, 1);
           }
         }
@@ -3640,7 +3807,7 @@ function bulletHitsFarmObstacle(shot) {
             if (shot.eggBomb) detonateBossEgg(shot);
             else {
               createImpactEffect(player.x, player.y, "#ff875f", .9);
-              damagePlayer(shot.bossShot ? health : 3, shot.attacker);
+              damagePlayer(shot.damage || (shot.bossShot ? health : 3), shot.attacker);
             }
             if (phase !== "playing") return;
           }
@@ -3748,6 +3915,7 @@ function bulletHitsFarmObstacle(shot) {
             maxHealth: bossHealth,
             shootCooldown: .8 + Math.random() * 1.2,
             abilityCooldown: 2.5,
+            chargeWindup: 0,
             chargeTimer: 0,
             summonCount: 0,
             summonCooldown: 8
@@ -3781,6 +3949,7 @@ function bulletHitsFarmObstacle(shot) {
         weaponPanel.hidden = false;
         armorPanel.hidden = true;
         weaponTitleNode.textContent = `Choose weapon ${weapons.length + 1} of ${weaponSlotCapacity}`;
+        showWeaponChoices();
         updateWeaponReadout();
       } else if (round === 14) {
         phase = "armor";
